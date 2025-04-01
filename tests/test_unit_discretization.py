@@ -165,9 +165,9 @@ def test_average(dataframe):
 def test_singlepower(dataframe):
     """Test SinglePower class"""
     model = dis.CustomDiscretizationError(dataframe, model=dis.SinglePower)
-    test_data = pd.DataFrame({"fs": [10.0, 2.0, -3.0],
-                              "gs": [10.0, 1.0, 3.0]},
-                             index=["f_est", "p", "alpha"])
+    test_data = pd.DataFrame({"fs": [10.0, -3.0, 2.0],
+                              "gs": [10.0, 3.0, 1.0]},
+                             index=["f_est", "alpha", "p"])
     assert model.model.parameter_keys == list(test_data.index)
     pd.testing.assert_frame_equal(model.model.parameters, test_data,
                                   check_dtype=False)
@@ -180,6 +180,9 @@ def test_singlepower(dataframe):
     assert model.model("fs", 0) == approx(10)
     assert model.model("fs", np.array([0, 0.5])) == approx([10, 9.25])
 
+def test_first_and_second_order(dataframe):
+    """Test SinglePower class"""
+    assert False
 
 def test_averagevalue(dataframe):
     """Test AverageValue class"""
