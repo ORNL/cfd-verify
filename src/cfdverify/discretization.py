@@ -134,7 +134,7 @@ class SinglePower(DiscretizationModel):
             return f_est + alpha*hs**p
         
         # Validate inputs
-        if len(p_limits) != 2 or (type(p_limits) != list and type(p_limits) != tuple):
+        if len(p_limits) != 2 or (type(p_limits) is not list and type(p_limits) is not tuple):
             raise ValueError("p_limits must be a list or tuple with two elements!")       
 
         # Normalize data for improved fitting
@@ -218,7 +218,7 @@ class AverageValue(DiscretizationModel):
         est : int | float | np.ndarray
             System response quantity estimate
         """
-        if type(h) == int or type(h) == float:
+        if type(h) is int or type(h) is float:
             est = self.parameters.loc[self.parameter_keys[0], key]
         else:
             est = (np.ones(np.shape(h))
@@ -281,7 +281,7 @@ class FinestValue(DiscretizationModel):
         est: int | float | np.ndarray
             System response quantity estimate
         """
-        if type(h) == int or type(h) == float:
+        if type(h) is int or type(h) is float:
             est = self.parameters.loc[self.parameter_keys[0], key]
         else:
             est = (np.ones(np.shape(h))
@@ -342,7 +342,7 @@ class MaximumValue(DiscretizationModel):
         est : int | float | np.ndarray
             System response quantity estimate
         """
-        if type(h) == int or type(h) == float:
+        if type(h) is int or type(h) is float:
             est = self.parameters.loc[self.parameter_keys[0], key]
         else:
             est = (np.ones(np.shape(h))
@@ -403,7 +403,7 @@ class MinimumValue(DiscretizationModel):
         est : int | float | np.ndarray
             System response quantity estimate
         """
-        if type(h) == int or type(h) == float:
+        if type(h) is int or type(h) is float:
             est = self.parameters.loc[self.parameter_keys[0], key]
         else:
             est = (np.ones(np.shape(h))
@@ -489,7 +489,7 @@ class ErrorModel(ABC):
         data : pd.Series | pd.DataFrame
             DataFrame of system response quantities of interest
         """
-        if key == None:
+        if key is None:
             data = self.parent.data
         else:
             data = self.parent.data[key]
@@ -520,12 +520,12 @@ class EstimatedError(ErrorModel):
             Estimated error of requested values
         """
         data = self.get_data(key)
-        if key == None:
+        if key is None:
             f_est = self.parent.f_est
         else:
             f_est = self.parent.f_est[key]
 
-        if index == None:
+        if index is None:
             err = data - f_est
         else:
             err = data.iloc[index] - f_est
@@ -565,7 +565,7 @@ class RelativeError(ErrorModel):
         """
         data = self.get_data(key)
 
-        if index == None:
+        if index is None:
             rel_err = data.diff(-1)
             # Define relative error for last mesh as same as previous mesh
             rel_err.iloc[-1] = rel_err.iloc[-2]
@@ -729,7 +729,7 @@ class StudentsTDistribution(UncertaintyModel):
         u = v * std_dev / np.sqrt(n)
 
         # Return Series if no index selected
-        if index == None:
+        if index is None:
             u = pd.Series(np.ones(len(self.parent))*u, name=key)
 
         return u
@@ -758,7 +758,7 @@ class FactorOfSafety(UncertaintyModel):
         : np.floating | pd.Series
             Uncertainty of requested values using supplied factor of safety
         """
-        if index == None:
+        if index is None:
             error = self.parent.error(key)
         else:
             error = self.parent.error(key, index)
@@ -862,13 +862,13 @@ class DiscretizationError(ABC):
             if type(arg1) in [list, tuple]:
                 self.hs_key ="hs"
 
-            elif type(arg1) == np.ndarray:
+            elif type(arg1) is np.ndarray:
                 if len(np.squeeze(arg1).shape) != 1:
                     raise ValueError("Numpy array of discretization sizes must be 1 dimensional!")
                 self.hs_key ="hs"
 
-            elif type(arg1) == pd.Series:
-                if arg1.name == None:
+            elif type(arg1) is pd.Series:
+                if arg1.name is None:
                     self.hs_key = "hs"
                 else:
                     self.hs_key = str(arg1.name)
@@ -883,12 +883,12 @@ class DiscretizationError(ABC):
                 self.keys = ("System Response Quantity",)
                 self.data = pd.DataFrame({self.keys[0]: arg2})
 
-            elif type(arg2) == dict:
+            elif type(arg2) is dict:
                 self.keys = tuple(arg2.keys())
                 self.data = pd.DataFrame(arg2)
 
-            elif type(arg2) == pd.Series:
-                if arg2.name == None:
+            elif type(arg2) is pd.Series:
+                if arg2.name is None:
                     self.keys = ("System Response Quantity",)
                 else:
                     self.keys = (str(arg2.name),)
@@ -896,7 +896,7 @@ class DiscretizationError(ABC):
             else:
                 raise TypeError("Second argument must be a list, tuple, numpy.ndarray, pandas.Series, or dict when first argument is a list, tuple, numpy.ndarray, pandas.Series, or dict!")
 
-        elif type(arg1) == dict and len(arg1.keys()) == 1:
+        elif type(arg1) is dict and len(arg1.keys()) == 1:
             self.hs_key = list(arg1.keys())[0]
             self.hs = pd.Series(arg1[self.hs_key], name=self.hs_key)
 
@@ -905,12 +905,12 @@ class DiscretizationError(ABC):
                 self.keys = ("System Response Quantity",)
                 self.data = pd.DataFrame({self.keys[0]: arg2})
 
-            elif type(arg2) == dict:
+            elif type(arg2) is dict:
                 self.keys = tuple(arg2.keys())
                 self.data = pd.DataFrame(arg2)
 
-            elif type(arg2) == pd.Series:
-                if arg2.name == None:
+            elif type(arg2) is pd.Series:
+                if arg2.name is None:
                     self.keys = ("System Response Quantity",)
                 else:
                     self.keys = (str(arg2.name),)
@@ -918,10 +918,10 @@ class DiscretizationError(ABC):
             else:
                 raise TypeError("Second argument must be a list, tuple, numpy.ndarray, pandas.Series, or dict when first argument is singular dictionary!")
 
-        elif type(arg1) == dict:
-            if arg2 == None:
+        elif type(arg1) is dict:
+            if arg2 is None:
                 mesh_key = "hs"
-            elif type(arg2) == str:
+            elif type(arg2) is str:
                 mesh_key = arg2
             else:
                 raise TypeError("Second argument must be a string if first argument is a dict!")
@@ -935,10 +935,10 @@ class DiscretizationError(ABC):
             else:
                 raise ValueError(f"{mesh_key} key not found in dict for discretization levels!")
             
-        elif type(arg1) == pd.DataFrame:
-            if arg2 == None:
+        elif type(arg1) is pd.DataFrame:
+            if arg2 is None:
                 mesh_key = "hs"
-            elif type(arg2) == str:
+            elif type(arg2) is str:
                 mesh_key = arg2
             else:
                 raise TypeError("Second argument must be a string if first argument is a dict!")
