@@ -315,6 +315,11 @@ def test_gci(dataframe):
     pd.testing.assert_series_equal(model.uncertainty("fs", normalize=True),
                                    test_data["fs"]/np.array([9.97, 9.88, 9.25]))
     
+def test_gci_lse1(least_squared_error_1):
+    model = dis.CustomDiscretizationError(least_squared_error_1,
+                                          uncertainty=dis.GCI)
+    assert model.u("C_l", 0) > model.error("C_l", 0)
+    
 def test_studentstdistribution(osc_dataframe):
     model = dis.CustomDiscretizationError(osc_dataframe,
                                           model=dis.AverageValue,

@@ -1,3 +1,4 @@
+from pathlib import Path
 import pytest
 import pandas as pd
 from cfdverify.discretization import CustomDiscretizationError
@@ -24,6 +25,11 @@ def osc_dataframe(hs) -> pd.DataFrame:
                 "fs": [10.2, 9.5, 10.3],
                 "gs": [9.4, 10.4, 10.2]}
     return pd.DataFrame(osc_data)
+
+@pytest.fixture(scope="package")
+def least_squared_error_1() -> pd.DataFrame:
+    path = Path(__file__).parent.resolve()
+    return pd.read_csv(Path(path, "resources", "lse1.csv"))
 
 @pytest.fixture(scope="package")
 def custom(dataframe):
