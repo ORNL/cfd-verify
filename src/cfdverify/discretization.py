@@ -631,20 +631,30 @@ class GCI(UncertaintyModel):
 
         The GCI method was proposed by Patrick Roache as a way to uniformly
         report discretization uncertainty in computational fluid dynamics
-        simulation results in 1994. As implemented values are not normalized as
-        suggested by Roache. Note the equation
+        simulation results in 1994. By default values are not normalized as
+        suggested by Roache and the factor of safety is 1.25.
+        Roache provided the equation
 
         .. math::
-            GCI_1 = \\frac{Fs * |\\epsilon_{21}|}{r_{21}^p - 1}
+            GCI_1 = \\frac{Fs * |\\epsilon_{21}|}{r_{21}^p - 1},
 
-        is valid for all mesh pairs. However, it must be corrected if 
-        estimating the uncertainty for the coarse mesh (2) using
+        for estimating the uncertainty of the finer mesh for any two mesh pairs, 
+        and the equation 
 
         .. math::
-            GCI_2 = r_{21}^p * \\frac{Fs * |\\epsilon_{21}|}{r_{21}^p - 1}.
+            GCI_2 = r_{21}^p * \\frac{Fs * |\\epsilon_{21}|}{r_{21}^p - 1},
 
-        For this code, this correction is only required for the coarsest mesh
-        in a given dataset.
+        for the coarser mesh of any mesh pair. These equations use the absolute
+        relative error measure :math:`|\\epsilon_{21}|` corrected for the 
+        distance to the infinitely fine mesh; this is equivalent to the absolute
+        estimated error :math:`|\\epsilon_{\mathrm{est}}|` for exact fits. 
+        However, for regression fits of data they are not equivalent; therefore,
+        this code implements the GCI uncertainty measure as
+
+        .. math::
+            GCI = Fs * |\\epsilon_{\mathrm{est}}|,
+
+        so that it is valid for both exact and regression fits.
         
         Parameters
         ----------
@@ -667,25 +677,10 @@ class GCI(UncertaintyModel):
         P. J. Roache, "Perspective: A Method for Uniform Reporting of Grid
         Refinement Studies," Journal of Fluids Engineering, 116:3 (1994).
         """
-        r = self.parent.refinement_ratios
-        p = self.parent.order[key]
-        if index == None:
-            err = self.parent.abs_relative_error(key, index)[:-1]
-            gci = fs * err / (r**p - 1)
-            # Add last mesh estimate with coarse mesh estimator
-            last_err = self.parent.abs_relative_error(key, len(self.parent)-1)
-            last_gci = r[-1]**p * fs * last_err / (r[-1]**p - 1)
-            gci = pd.Series(np.append(gci, last_gci), name=key)
-        elif index == len(self.parent) - 1:
-            err = self.parent.abs_relative_error(key, index)
-            # Correct for coarse mesh estimator
-            gci = r[-1]**p * fs * err / (r[-1]**p - 1)
-        else:
-            err = self.parent.abs_relative_error(key, index)
-            gci = fs * err / (r[index]**p - 1)
+        gci = fs * self.parent.abs_estimated_error(key, index)
 
         if normalize:
-            if index == None:
+            if index is None:
                 gci = gci / self.parent.data[key]
             else:
                 gci = gci / self.parent.data[key][index]
@@ -1156,7 +1151,7 @@ class DiscretizationError(ABC):
         uncertainty : bool
             (Optional) Plot uncertainty bar
         """
-        if key == None:
+        if key is None:
             key = self.keys[0]
 
         fig, ax = plt.subplots()
@@ -1171,7 +1166,7 @@ class DiscretizationError(ABC):
         if error or uncertainty:
             fill_hs = np.array([0, self.hs.values[index]])
             err = abs(self.error(key, index)) * np.ones(fill_hs.shape)
-            val = self.model(key, self.hs[index]) * np.ones(fill_hs.shape)
+            val = self.data.loc[index, key] * np.ones(fill_hs.shape)
             err_low = val - err
             err_high = val + err
         if error:
@@ -1180,7 +1175,7 @@ class DiscretizationError(ABC):
         # Plot uncertainty
         if uncertainty:
             unc = self.uncertainty(key, index) * np.ones(fill_hs.shape)
-            val = self.model(key, self.hs[index]) * np.ones(fill_hs.shape)
+            val = self.data.loc[index, key] * np.ones(fill_hs.shape)
             unc_low = val - unc
             unc_high = val + unc
             ax.fill_between(fill_hs, err_high, unc_high, color="#ffe119",
@@ -1190,15 +1185,15 @@ class DiscretizationError(ABC):
             
         # Annotate and save
         ax.set_xlim(left=0)
-        if xlabel == None:
+        if xlabel is None:
             ax.set_xlabel("Discretization Size")
         else:
             ax.set_xlabel(xlabel)
-        if ylabel == None:
+        if ylabel is None:
             ax.set_ylabel("System Response Quantity")
         else:
             ax.set_ylabel(ylabel)
-        if title != None:
+        if title is not None:
             ax.set_title(title)
         ax.legend()
         fig.savefig(filename, bbox_inches="tight", dpi=300)
@@ -1213,7 +1208,7 @@ class DiscretizationError(ABC):
         key : str
             Key of system response quantity of interest
         """
-        if key == None:
+        if key is None:
             key = self.keys[0]
 
         print(f"Mesh Size \t {key}")

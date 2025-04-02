@@ -319,6 +319,7 @@ def test_gci_lse1(least_squared_error_1):
     model = dis.CustomDiscretizationError(least_squared_error_1,
                                           uncertainty=dis.GCI)
     assert model.u("C_l", 0) > model.error("C_l", 0)
+    pd.testing.assert_series_equal(model.u("C_l"), 1.25*model.error("C_l"))
     
 def test_studentstdistribution(osc_dataframe):
     model = dis.CustomDiscretizationError(osc_dataframe,
