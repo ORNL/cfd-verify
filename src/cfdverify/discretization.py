@@ -992,7 +992,60 @@ class DiscretizationError(ABC):
         self.hs = self.hs.loc[idx].reset_index(drop=True)
         self.data = self.data.loc[idx].reset_index(drop=True)
 
-    # Data methods ############################################################   
+    # Data methods ############################################################
+    def estimated_error(self,
+                        key: str | None = None,
+                        index: int | None = None,
+    ) -> np.floating | pd.Series | pd.DataFrame:
+        """Compute estimated error for data
+
+        Parameters
+        ----------
+        key : str, optional
+            Key for system response quantity of interest, by default None
+        index : int, optional
+            Index for level of interest, by default None
+
+        Returns
+        -------
+        np.floating | pd.Series | pd.DataFrame
+            Estimated error of quantities of interest
+        """
+        if key is None:
+            data = self.data
+            f_est = self.f_est
+        else:
+            data = self.data[key]
+            f_est = self.f_est[key]
+
+        if index is None:
+            est_err = data - f_est
+        else:
+            est_err = data.iloc[index] - f_est
+
+        return est_err
+    
+    def abs_estimated_error(self,
+                       key: str=None,
+                       index: int=None,
+    ) -> np.floating | pd.Series | pd.DataFrame:
+        """Compute absolute estimated error for data
+
+        Parameters
+        ----------
+        key : str, optional
+            Key for system response quantity of interest, by default None
+        index : int, optional
+            Index for level of interest, by default None
+
+        Returns
+        -------
+        np.floating | pd.Series | pd.DataFrame
+            Absolute estimated error of quantities of interest
+        """
+        
+        return abs(self.estimated_error(key, index))
+    
     def relative_error(self,
                        key: str | None = None,
                        index: int | None = None,
@@ -1021,12 +1074,12 @@ class DiscretizationError(ABC):
         rel_err : np.floating | pd.Series | pd.DataFrame
             Relative error of quantities of interest
         """
-        if key == None:
+        if key is None:
             data = self.data
         else:
             data = self.data[key]
 
-        if index == None:
+        if index is None:
             rel_err = data.diff(-1)
             # Define relative error for last mesh as same as previous mesh
             rel_err.iloc[-1] = rel_err.iloc[-2]
@@ -1064,7 +1117,7 @@ class DiscretizationError(ABC):
         Returns
         -------
         rel_err : np.floating | pd.Series | pd.DataFrame
-            Relative error of quantities of interest
+            Absolute relative error of quantities of interest
         """
         return abs(self.relative_error(key, index))
 
