@@ -1165,12 +1165,11 @@ class DiscretizationError(ABC):
         # Plot error
         if error or uncertainty:
             fill_hs = np.array([0, self.hs.values[index]])
-            err = abs(self.error(key, index)) * np.ones(fill_hs.shape)
-            val = self.data.loc[index, key] * np.ones(fill_hs.shape)
-            err_low = val - err
-            err_high = val + err
+            val = self.data.loc[index, key]
+            err_min = min(val, self.f_est[key])
+            err_max = max(val, self.f_est[key])
         if error:
-            ax.fill_between(fill_hs, err_low, err_high, color="#ff7f0e",
+            ax.fill_between(fill_hs, err_min, err_max, color="#ff7f0e",
                             alpha=0.25, edgecolor=None, label="Error")
         # Plot uncertainty
         if uncertainty:
@@ -1178,9 +1177,9 @@ class DiscretizationError(ABC):
             val = self.data.loc[index, key] * np.ones(fill_hs.shape)
             unc_low = val - unc
             unc_high = val + unc
-            ax.fill_between(fill_hs, err_high, unc_high, color="#ffe119",
+            ax.fill_between(fill_hs, err_max, unc_high, color="#ffe119",
                             alpha=0.25, edgecolor=None)
-            ax.fill_between(fill_hs, unc_low, err_low, color="#ffe119",
+            ax.fill_between(fill_hs, unc_low, err_min, color="#ffe119",
                             alpha=0.25, edgecolor=None, label="Uncertainty")
             
         # Annotate and save
