@@ -5,6 +5,14 @@ Efficient solution verification tools for computational fluid dynamics (CFD).
 
 CFDverify is a python package designed to make verifying computational fluid dynamics (CFD) simulations easier! Solution verification is essential for trustworthy CFD results, but you need to spend your time running simulations, not fiddling with error analysis. CFDverify provides tested methods, batteries included! Check out the tutorial notebooks, use the provided utilities for easy plotting and output, or peruse the documentation to catch up on the theory. CFDverify is in early stages of development, so make sure to open an `issue <https://github.com/ORNL/cfd-verify/issues>`_ if it doesn't have a feature you need; but, be warned, the interface may change unexpectedly until the first major release!
 
+.. note::
+
+    CFDverify was developed to be the most trustworthy solution verification package available, but it has not been certified, yet. As such, make sure you review your work requirements and perform any quality work necessary before using CFDverify.
+
+.. warning::
+
+    Verification and validation (V&V) of computational models is non-trivial. While every effort has been made to make CFDverify user friendly, the documentation alone is not sufficient to understand how to run a specific computational model or apply V&V to that model.
+
 Installation
 ------------
 
