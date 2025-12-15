@@ -7,7 +7,7 @@ CFDverify is a python package designed to make verifying computational fluid dyn
 
 .. note::
 
-    CFDverify was developed to be the most trustworthy solution verification package available, but it has not been certified, yet. As such, make sure you review your work requirements and perform any quality work necessary before using CFDverify.
+    CFDverify was developed to be the most trustworthy solution verification package available, but it has not been certified, yet. As such, make sure you review your work requirements and perform any quality assurance work necessary before using CFDverify in your project. 
 
 .. warning::
 
@@ -47,12 +47,23 @@ The documentation can then be read using any web browser by opening the file cfd
 Testing
 -------
 
-To run CFDverify's tests, execute the command :code:`pytest` in the top level of the CFDverify directory or in the tests sub-directory. Install CFDverify using :code:`pip install .[tests]` to ensure you have all the required dependencies to run tests.
+To run CFDverify's tests, execute the command :code:`pytest` in the top level of the CFDverify directory or in the tests sub-directory. Install CFDverify using :code:`pip install .[tests]` to ensure you have all the required dependencies to run tests. 
+
+Issues
+------
+
+Please report all issues with CFDverify on the `GitHub's issues page <https://github.com/ORNL/cfd-verify/issues>`_.
 
 Contributing
 ------------
 
-More information coming soon! For now, feel free to open an `issue <https://github.com/ORNL/cfd-verify/issues>`_ or contact the author.
+Contributions are encouraged! For more information, see the :ref:`Development Process page <development-section>`.
+
+Citing
+------
+
+If you would like to cite CFDverify in an academic work beyond reference to the code repository, please use the `2025 American Society of Mechanical Engineers Verification, Validation, and Uncertainty Quantification Symposium conference paper <https://doi.org/10.1115/VVUQ2025-151463>`_ which describes the need, design philosophy, and structure of CFDverify. 
+
 
 Author
 ------
