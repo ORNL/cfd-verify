@@ -7,7 +7,7 @@ CFDverify is a python package designed to make verifying computational fluid dyn
 
 .. note::
 
-    CFDverify was developed to be the most trustworthy solution verification package available, but it has not been certified, yet. As such, make sure you review your work requirements and perform any quality assurance work necessary before using CFDverify in your project. 
+    CFDverify does not come with any certifications or quality guarantees. Before using CFDverify in your work, make sure you review your work requirements and perform any quality assurance work necessary. 
 
 .. warning::
 
@@ -57,7 +57,7 @@ Please report all issues with CFDverify on the `GitHub's issues page <https://gi
 Contributing
 ------------
 
-Contributions are encouraged! For more information, see the :ref:`Development Process page <development-section>`.
+Contributions are encouraged! For more information, see the `Development Process page <https://cfd-verify.readthedocs.io/en/latest/development.html>`_ in the documentation.
 
 Citing
 ------

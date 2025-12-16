@@ -1,5 +1,3 @@
-.. _development-section:
-
 Development Process
 ===================
 
