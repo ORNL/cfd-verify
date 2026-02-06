@@ -200,7 +200,7 @@ class FirstAndSecondOrder(DiscretizationModel):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         The discretization model for a 1st and 2nd order power series expansion
         is
@@ -283,7 +283,7 @@ class FirstAndSecondOrder(DiscretizationModel):
         : pd.Series
             Observed convergence orders
         """
-        return self.parameters.loc[self.parameter_keys[1:]]
+        return pd.Series([1,2])
     
 class AverageValue(DiscretizationModel):
     """Model discretization error as average of all values"""
