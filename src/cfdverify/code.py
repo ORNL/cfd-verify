@@ -1,5 +1,7 @@
+from collections.abc import Iterable
 import math
 import os
+from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -18,7 +20,8 @@ plt.rcParams["axes.axisbelow"] = True
 class OrderOfAccuracy:
     """Code verification data as well as analysis and output methods"""
 
-    def __init__(self, data: pd.DataFrame) -> None: # FIXME, input to compute errors from finest result
+
+    def __init__(self, data: pd.DataFrame, relative_error: bool=False) -> None:
         """Default constructor
         
         Parameters
@@ -28,13 +31,39 @@ class OrderOfAccuracy:
             discretization size of the data and column keys are the responses 
             to analyze.
         """
+        # Format data
         self.data = data.sort_index(ascending=False)
+        self.keys = self.data.keys().to_list()
+        # Label index if it isn't already named
+        if self.data.index.name is None:
+            self.data.index.name = '\u0394'
+
+        if relative_error:# FIXME, this does not appear to work. Need test.
+            self.reference_result = self.data.iloc[-1]
+            self.data = (self.data - self.reference_result).drop(self.data.index[-1])
+        
+        # Compute derived quantities
         self.r = self.compute_refinement_ratios()
         self.p_hat = self.compute_orders()
 
-        # FIXME, object to combine all data
+        # Create a single dataframe for export
+        # Rename columns as multi-index
+        error_label = ["Error"] * len(self.keys)
+        error_multi_index = pd.MultiIndex.from_arrays([self.keys, error_label],
+                                                      names=["Error Measures", "Parameters"])
+        data_to_combine = self.data.copy()
+        data_to_combine.columns = error_multi_index
 
+        order_label = ["Order"] * len(self.keys)
+        order_multi_index = pd.MultiIndex.from_arrays([self.keys, order_label],
+                                                      names=["Error Measures", "Parameters"])
+        order_to_combine = self.p_hat.copy()
+        order_to_combine.columns = order_multi_index
+        # Combine dataframes
+        self.combined = pd.concat([data_to_combine, order_to_combine], axis=1)
+        self.combined.sort_index(axis=1, inplace=True)
 
+    
     def compute_refinement_ratios(self) -> pd.Series:
         """Computes the refinement ratios of the data
         
@@ -67,7 +96,12 @@ class OrderOfAccuracy:
         return pd.DataFrame(orders, index=self.data.index)
     
 
-    def _observed_order(self, coarse_error: float | np.ndarray, fine_error: float | np.ndarray, refinement_ratio: float | np.ndarray) -> float | np.ndarray:
+    def _observed_order(
+            self,
+            coarse_error: float | np.ndarray,
+            fine_error: float | np.ndarray,
+            refinement_ratio: float | np.ndarray,
+    ) -> float | np.ndarray:
         """Computes observed order of the data
         
         See Eq. 5.22 in Oberkampf and Roy 2010
@@ -103,17 +137,47 @@ class OrderOfAccuracy:
             Name for observed order of key
         """
         return str(key)+" Order"
+    
+    # Generic methods #########################################################
+    def get_average_orders(self) -> pd.Series:
+        """Get the mean order of accuracy for each response
+        
+        Returns
+        -------
+        pd.Series
+            Mean order of accuracy for each response. Doesn't include NaNs.
+        """
+        return self.p_hat.mean()
 
 
     # Plotting methods ########################################################
-    def plot_variable(
+    def plot_response(
             self, key: str,
             plot_theoretical_orders: bool=True,
             xlabel: str | None=None,
             ylabel: str | None=None,
             title: str | None=None,
             save_figure: str | os.PathLike | bool | None=None,
-    ) -> mpl.figure.Figure: # pyright: ignore[reportAttributeAccessIssue]
+    ) -> None:
+        """Plot specified key to visualize error convergence
+        
+        Parameters
+        ----------
+        key : str
+            Key of response to plot
+        plot_theoretical_orders : bool
+            Plot theoretical order lines for comparison. Defaults to true.
+        xlabel : str | None
+            Label for x axis. Defaults to index name.
+        ylabel : str | None
+            Label for y axis. Defaults to response key.
+        title : str | None
+            Title for plot. Defaults to None.
+        save_figure: str | os.PathLike | bool | None
+            Save figure to file if true. Defaults to None, which doesn't save.
+            If a string or os.PathLike, saves to specified name. If True, saves
+            to "{key}_Convergence.png"
+        """
         order_key = self._order_key(key)
         mean_p_hat = self.p_hat[order_key].mean()
 
@@ -147,8 +211,6 @@ class OrderOfAccuracy:
             ax.set_xlabel(xlabel)
         elif self.data.index.name is not None:
             ax.set_xlabel(str(self.data.index.name))
-        else:
-            ax.set_xlabel("h")
 
         if ylabel:
             ax.set_ylabel(ylabel)
@@ -167,24 +229,45 @@ class OrderOfAccuracy:
             figure_title = f"{key}_Convergence.png"
             fig.savefig(figure_title, bbox_inches="tight", dpi=300)
 
-        return fig
 
-
-    def plot_variables(
+    def plot_responses(
             self,
+            keys : Iterable | None=None,
             plot_theoretical_orders=True,
             xlabel: str | None=None,
             ylabel: str | None=None,
             title: str | None=None,
             save_figure: str | os.PathLike | bool | None=None,
-    ) -> mpl.figure.Figure: # pyright: ignore[reportAttributeAccessIssue]
+    ) -> None:
+        """Plot specified or all keys to visualize error convergence
+        
+        Parameters
+        ----------
+        keys : Iterable | None
+            Keys of responses to plot. Defaults to all responses.
+        plot_theoretical_orders : bool
+            Plot theoretical order lines for comparison. Defaults to true.
+        xlabel : str | None
+            Label for x axis. Defaults to index name.
+        ylabel : str | None
+            Label for y axis. Defaults to response key.
+        title : str | None
+            Title for plot. Defaults to None.
+        save_figure: str | os.PathLike | bool | None
+            Save figure to file if true. Defaults to None, which doesn't save.
+            If a string or os.PathLike, saves to specified name. If True, saves
+            to "Convergences.png"
+        """
+        if keys is None:
+            keys = self.keys
+            
         mean_p_hats = {}
-        for key in self.data:
+        for key in keys:
             order_key = self._order_key(key)
             mean_p_hats[key] = self.p_hat[order_key].mean()
 
         fig, ax = plt.subplots()
-        for key in self.data:
+        for key in keys:
             ax.loglog(self.data.index,
                       self.data[key],
                       marker='o',
@@ -210,8 +293,6 @@ class OrderOfAccuracy:
             ax.set_xlabel(xlabel)
         elif self.data.index.name is not None:
             ax.set_xlabel(str(self.data.index.name))
-        else:
-            ax.set_xlabel("h")
 
         if ylabel:
             ax.set_ylabel(ylabel)
@@ -230,8 +311,6 @@ class OrderOfAccuracy:
             figure_title = f"Convergences.png"
             fig.savefig(figure_title, bbox_inches="tight", dpi=300)
 
-        return fig
-
 
     def plot_order(
             self,
@@ -240,7 +319,24 @@ class OrderOfAccuracy:
             ylabel: str | None=None,
             title: str | None=None,
             save_figure: str | os.PathLike | bool | None=None,
-    ) -> mpl.figure.Figure: # pyright: ignore[reportAttributeAccessIssue]
+    ) -> None:
+        """Plot specified key to visualize order of convergence
+        
+        Parameters
+        ----------
+        key : str
+            Key of response to plot
+        xlabel : str | None
+            Label for x axis. Defaults to index name.
+        ylabel : str | None
+            Label for y axis. Defaults to response key.
+        title : str | None
+            Title for plot. Defaults to None.
+        save_figure: str | os.PathLike | bool | None
+            Save figure to file if true. Defaults to None, which doesn't save.
+            If a string or os.PathLike, saves to specified name. If True, saves
+            to "{key}_OrderOfConvergence.png"
+        """
         order_key = self._order_key(key)
         mean_p_hat = self.p_hat[order_key].mean()
 
@@ -256,8 +352,6 @@ class OrderOfAccuracy:
             ax.set_xlabel(xlabel)
         elif self.data.index.name is not None:
             ax.set_xlabel(str(self.data.index.name))
-        else:
-            ax.set_xlabel("h")
 
         if ylabel:
             ax.set_ylabel(ylabel)
@@ -276,23 +370,42 @@ class OrderOfAccuracy:
             figure_title = f"{key}_OrderOfConvergence.png"
             fig.savefig(figure_title, bbox_inches="tight", dpi=300)
 
-        return fig
-
 
     def plot_orders(
             self,
+            keys : Iterable | None=None,
             xlabel: str | None=None,
             ylabel: str | None=None,
             title: str | None=None,
             save_figure: str | os.PathLike | bool | None=None,
-    ) -> mpl.figure.Figure: # pyright: ignore[reportAttributeAccessIssue]
+    ) -> None:
+        """Plot specified or all keys to visualize order of convergence
+        
+        Parameters
+        ----------
+        keys : Iterable | None
+            Keys of responses to plot. Defaults to all responses.
+        xlabel : str | None
+            Label for x axis. Defaults to index name.
+        ylabel : str | None
+            Label for y axis. Defaults to response key.
+        title : str | None
+            Title for plot. Defaults to None.
+        save_figure: str | os.PathLike | bool | None
+            Save figure to file if true. Defaults to None, which doesn't save.
+            If a string or os.PathLike, saves to specified name. If True, saves
+            to "OrdersOfConvergence.png"
+        """
+        if keys is None:
+            keys = self.keys
+
         mean_p_hats = {}
-        for key in self.data:
+        for key in keys:
             order_key = self._order_key(key)
             mean_p_hats[key] = self.p_hat[order_key].mean()
 
         fig, ax = plt.subplots()
-        for key in self.data:
+        for key in keys:
             ax.semilogx(self.data.index,
                         self.p_hat[self._order_key(key)],
                         marker='o',
@@ -304,8 +417,6 @@ class OrderOfAccuracy:
             ax.set_xlabel(xlabel)
         elif self.data.index.name is not None:
             ax.set_xlabel(str(self.data.index.name))
-        else:
-            ax.set_xlabel("h")
 
         if ylabel:
             ax.set_ylabel(ylabel)
@@ -324,8 +435,43 @@ class OrderOfAccuracy:
             figure_title = f"OrdersOfConvergence.png"
             fig.savefig(figure_title, bbox_inches="tight", dpi=300)
 
-        return fig
-    
-    # FIXME, summary method to dump to console
 
-    # FIXME, tabular output method
+    # Output methods ##########################################################
+    def print(self) -> None:
+        """Print results to console for command line interface"""
+        print(self.combined)
+
+
+    def export(self, filename: str | os.PathLike, type: str="csv") -> os.PathLike:
+        """Export order of accuracy study results to a file in tabular format
+
+        Parameters
+        ----------
+        filename : str | os.PathLike
+            Name of file to write data to
+        type : str
+            Type of file to write to. Currently supported types are comma 
+            separated variable (csv) and latex.
+
+        Returns
+        -------
+        filename : os.PathLike
+            Path object data was written to
+        """
+        # Hold valid types
+        VALID_TYPES = ["csv", "latex"]
+        # Ensure filename is a Path object
+        filename = Path(filename)
+
+        if type == "csv":
+            self.combined.to_csv(filename)
+        elif type == "latex":
+            self.combined.to_latex(filename)
+        else:
+            msg = "Unsupported type!\n"
+            msg += f"Supported types are: {VALID_TYPES}\n"
+            msg += "Look at pandas.DataFrame API for manual options."
+            raise ValueError(msg)
+
+        return filename
+    
