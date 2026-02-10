@@ -37,9 +37,10 @@ class OrderOfAccuracy:
         # Label index if it isn't already named
         if self.data.index.name is None:
             self.data.index.name = '\u0394'
-
-        if relative_error:# FIXME, this does not appear to work. Need test.
+        # If using a benchmark (gold) solution, convert values into errors
+        if relative_error:
             self.reference_result = self.data.iloc[-1]
+            self.reference_size = self.data.index[-1]
             self.data = (self.data - self.reference_result).drop(self.data.index[-1])
         
         # Compute derived quantities
@@ -138,6 +139,7 @@ class OrderOfAccuracy:
         """
         return str(key)+" Order"
     
+
     # Generic methods #########################################################
     def get_average_orders(self) -> pd.Series:
         """Get the mean order of accuracy for each response
