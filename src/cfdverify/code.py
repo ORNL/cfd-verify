@@ -18,18 +18,33 @@ plt.rcParams["axes.axisbelow"] = True
 
 
 class OrderOfAccuracy:
-    """Code verification data as well as analysis and output methods"""
+    """Code verification data as well as analysis and output methods
+    
+    This class can be used for both spatial and temporal refinement studies. If
+    both must be computed, it is suggested to conduct separate order refinement
+    (e.g., spatial discretization followed by temporal discretization). Please
+    reach out to developers if a combined approach is needed. The class is 
+    constructed using a pandas DataFrame which is row-indexed by discretization
+    level. Each column contains a response's error data at these discretization
+    levels. As many columns as desired can be used. 
+
+    The class defaults to assuming that the provided data are errors. If 
+    providing raw response values, the solution can be provided as the finest 
+    result (for exact solutions, use a size of 0).
+    """
 
 
     def __init__(self, data: pd.DataFrame, relative_error: bool=False) -> None:
-        """Default constructor
-        
+        """        
         Parameters
         ----------
         data : pd.DataFrame
             Code convergence data in a pandas DataFrame. Index values are the 
             discretization size of the data and column keys are the responses 
-            to analyze.
+            to analyze. Index names are encouraged for better reporting.
+        relative_error : bool
+            If True, use finest result as solution. See theory guide for 
+            considerations with approximate solutions. 
         """
         # Format data
         self.data = data.sort_index(ascending=False)
@@ -446,6 +461,12 @@ class OrderOfAccuracy:
 
     def export(self, filename: str | os.PathLike, type: str="csv") -> os.PathLike:
         """Export order of accuracy study results to a file in tabular format
+
+        This function is a thin wrapper of some of the pandas' DataFrame export
+        methods which are included for convenience of the expected most common
+        operations. For advanced usage, users may directly use 
+        `pandas input/output <https://pandas.pydata.org/docs/reference/io.html>`__
+        methods on the combined object.
 
         Parameters
         ----------

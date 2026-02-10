@@ -14,5 +14,7 @@ extensions = [
     "sphinx.ext.napoleon",
 ]
 
+autoclass_content = "both"
+
 # HTML options
 html_theme = "sphinx_rtd_theme"

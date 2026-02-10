@@ -1,22 +1,8 @@
 Code
 ====
 
-The code verification module assists users in verifying their codes.
+The code verification module assists users in verifying their codes. Currently, only order of accuracy assesments are supported through the OrderOfAccuracy class. These analyses are the most reliable and expensive for code verification. See the :doc:`Theory Guide <theory>` for more information on code verification.
 
-Order of Accuracy
------------------
-
-Describe process for determining order...
-
-Exact Solutions
----------------
-
-Describe why exact solutions are neccessary...
-
-Approximate Solutions
-^^^^^^^^^^^^^^^^^^^^^
-
-Describe process and caveats of approximate solutions...
 
 .. autoclass:: cfdverify.code.OrderOfAccuracy
     :members:
