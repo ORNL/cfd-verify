@@ -2,9 +2,9 @@
 Theory
 ******
 
-This section inlcudes a minimum theory to help users perform effective verification and validation. It is not a substitute for proper training on the topic. To start, several terms can be helpful to know. Verification activities evaluate the correctness of a model. Validation activities assess a model's representation of a real system. Together, these activities are used to assess the accuracy of a model and are often talked about together as verification and validation (V&V). V&V is often part of uncertainty quantification (UQ) activities, which may include uncertianty propagation and sensitivity analysis among many other types. These activities are often described together as VVUQ. 
+This section includes a minimum theory to help users perform effective verification and validation. It is not a substitute for proper training on the topic. To start, several terms can be helpful to know. Verification activities evaluate the correctness of a model. Validation activities assess a model's representation of a real system. Together, these activities are used to assess the accuracy of a model and are often talked about together as verification and validation (V&V). V&V is often part of uncertainty quantification (UQ) activities, which may include uncertainty propagation and sensitivity analysis among many other types. These activities are often described together as VVUQ. 
 
-.. note:: CFDverify makes a best effort attempt to follow the terminology defined in the *Verification, Validation, and Uncertainty Quantification Terminology in Computational Modeling and Simulation* standard published by the American Society of Mechanical Engineers (ASME) [ASME1]_. If you notice any descrepencies, please open an `issue <https://github.com/ORNL/cfd-verify/issues>`_.
+.. note:: CFDverify makes a best effort attempt to follow the terminology defined in the *Verification, Validation, and Uncertainty Quantification Terminology in Computational Modeling and Simulation* standard published by the American Society of Mechanical Engineers (ASME) [ASME1]_. If you notice any discrepancies, please open an `issue <https://github.com/ORNL/cfd-verify/issues>`_.
 
 .. _code_verification_theory:
 
@@ -23,7 +23,7 @@ Order of accuracy tests are the most rigorous code verification activity because
 Exact Solutions
 ^^^^^^^^^^^^^^^
 
-Exact solutions are neccesary for rigorous code verification to ensure that the code converges to the correct solution. Without an exact solution, the order of accuracy of a solver can be established, but their is no guarantee that it converges to the correct value. The partial differential equations modeled in scientific codes often do not have analytic solutions, but exact solutions can be obtained a few ways. Perhaps the most common is the method of manufactured solutions (MMS) [Roache1998]_ & [Oberkampf2010]_. 
+Exact solutions are necessary for rigorous code verification to ensure that the code converges to the correct solution. Without an exact solution, the order of accuracy of a solver can be established, but their is no guarantee that it converges to the correct value. The partial differential equations modeled in scientific codes often do not have analytic solutions, but exact solutions can be obtained a few ways. Perhaps the most common is the method of manufactured solutions (MMS) [Roache1998]_ & [Oberkampf2010]_. 
 
 Approximate Solutions
 ^^^^^^^^^^^^^^^^^^^^^
