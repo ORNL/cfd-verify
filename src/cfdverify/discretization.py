@@ -769,8 +769,9 @@ class GCI(UncertaintyModel):
 
         References
         ----------
-        P. J. Roache, "Perspective: A Method for Uniform Reporting of Grid
-        Refinement Studies," Journal of Fluids Engineering, 116:3 (1994).
+        Patrick J. Roache, 1994, Perspective: A Method for Uniform Reporting of
+        Grid Refinement Studies, Journal of Fluids Engineering, 
+        116(3): 405-413. https://doi.org/10.1115/1.2910291.
         """
         gci = fs * self.parent.abs_estimated_error(key, index)
 

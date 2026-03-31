@@ -48,7 +48,14 @@ def custom(dataframe):
 ## Regression data ############################################################
 @pytest.fixture(scope="package")
 def roy_2003():
-    """Values from Roy 2003 extracted digitally"""
+    """Values from Roy 2003 extracted digitally
+    
+    References
+    ----------
+    Christopher J. Roy, 2003, Grid Convergence Error Analysis for Mixed-Order 
+    Numerical Schemes, AIAA Journal, 41(4): 595-604. 
+    https://doi.org/10.2514/2.2013.
+    """
     hs = [1, 2, 4, 8, 16, 32, 64, 128]
     # Surface pressure at x/R=0.83, Fig. 6
     p8 = [1874.4053654581828,

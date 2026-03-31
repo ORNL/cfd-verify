@@ -15,8 +15,8 @@ def test_asme_procedure_phi1():
 
     References
     ----------
-    "Procedure for Estimation and Reporting of Uncertainty Due to 
-    Discretization in CFD Applications." ASME. J. Fluids Eng. July 2008; 
+    2008, Procedure for Estimation and Reporting of Uncertainty Due to 
+    Discretization in CFD Applications, Journal of Fluids Engineering, 
     130(7): 078001. https://doi.org/10.1115/1.2960953
     """
     N = [18_000, 8_000, 4_500]
@@ -42,8 +42,8 @@ def test_asme_procedure_phi2():
 
     References
     ----------
-    "Procedure for Estimation and Reporting of Uncertainty Due to 
-    Discretization in CFD Applications." ASME. J. Fluids Eng. July 2008; 
+    2008, Procedure for Estimation and Reporting of Uncertainty Due to 
+    Discretization in CFD Applications, Journal of Fluids Engineering, 
     130(7): 078001. https://doi.org/10.1115/1.2960953
     """
     N = [18_000, 4_500, 980]
