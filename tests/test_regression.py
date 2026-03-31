@@ -5,13 +5,13 @@ import cfdverify.discretization as dis
 
 
 def test_asme_procedure_phi1():
-    """Test against ASME JFE annoucement
+    """Test against ASME JFE announcement
     
     This test tests the code against the data contained in the American Society
-    of Mechanical Engineer's Journal of Fluids Engineering annoucement 
+    of Mechanical Engineer's Journal of Fluids Engineering announcement
     "Procedure for Estimation and Reporting of Uncertainty Due to 
     Discretization in CFD Applications." Specifically, this test compares data 
-    for the first response quantity, the dimensionless reattachement length.
+    for the first response quantity, the dimensionless reattachment length.
 
     References
     ----------
@@ -32,10 +32,10 @@ def test_asme_procedure_phi1():
 
 
 def test_asme_procedure_phi2():
-    """Test against ASME JFE annoucement
+    """Test against ASME JFE announcement
     
     This test tests the code against the data contained in the American Society
-    of Mechanical Engineer's Journal of Fluids Engineering annoucement 
+    of Mechanical Engineer's Journal of Fluids Engineering announcement
     "Procedure for Estimation and Reporting of Uncertainty Due to 
     Discretization in CFD Applications." Specifically, this test compares data 
     for the second response quantity, the axial velocity at x/H=8 and y=0.0526.
