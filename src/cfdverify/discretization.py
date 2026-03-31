@@ -210,7 +210,7 @@ class FirstAndSecondOrder(DiscretizationModel):
 
         where :math:`f_h` is the system response quantity (SRQ) at a 
         representative discretization size of :math:`h`, :math:`f_0` is the 
-        estimated SRQ with no discretization error, :math:`\\alpha_1` is the 
+        estimated SRQ for an infinitely fine mesh, :math:`\\alpha_1` is the 
         1st order term coefficient, and :math:`\\alpha_2` is the 2nd order term
         coefficient.
         
