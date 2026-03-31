@@ -49,6 +49,9 @@ def custom(dataframe):
 @pytest.fixture(scope="package")
 def roy_2003():
     """Values from Roy 2003 extracted digitally
+
+    Roy's 2003 paper conducts a grid convergence analysis using a mixed-order
+    method and is one of the most complete descriptions of the method.
     
     References
     ----------

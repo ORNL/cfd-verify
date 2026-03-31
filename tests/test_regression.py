@@ -59,6 +59,7 @@ def test_asme_procedure_phi2():
 
 
 def test_first_and_second_order_literature(roy_2003):
+    """Tests mixed-order method from original work"""
     roy_data = roy_2003[0]
     roy_exact = roy_2003[1]
     model = dis.CustomDiscretizationError(roy_data, model=dis.FirstAndSecondOrder)
