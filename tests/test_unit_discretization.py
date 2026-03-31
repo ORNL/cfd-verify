@@ -185,9 +185,9 @@ def test_average(dataframe):
 def test_singlepower(dataframe):
     """Test SinglePower class"""
     model = dis.CustomDiscretizationError(dataframe, model=dis.SinglePower)
-    test_data = pd.DataFrame({"fs": [10.0, 2.0, -3.0],
-                              "gs": [10.0, 1.0, 3.0]},
-                             index=["f_est", "p", "alpha"])
+    test_data = pd.DataFrame({"fs": [10.0, -3.0, 2.0],
+                              "gs": [10.0, 3.0, 1.0]},
+                             index=["f_est", "alpha", "p"])
     assert model.model.parameter_keys == list(test_data.index)
     pd.testing.assert_frame_equal(model.model.parameters, test_data,
                                   check_dtype=False)
@@ -200,6 +200,23 @@ def test_singlepower(dataframe):
     assert model.model("fs", 0) == approx(10)
     assert model.model("fs", np.array([0, 0.5])) == approx([10, 9.25])
 
+def test_first_and_second_order(dataframe):
+    """Test FirstAndSecondOrder class"""
+    model = dis.CustomDiscretizationError(dataframe, model=dis.FirstAndSecondOrder)
+    test_data = pd.DataFrame({"fs": [10.0, 0.0, -3.0],
+                              "gs": [10.0, 3.0, 0.0]},
+                             index=["f_est", "alpha_1", "alpha_2"])
+    assert model.model.parameter_keys == list(test_data.index)
+    pd.testing.assert_frame_equal(model.model.parameters, test_data,
+                                  check_dtype=False, atol=1e-6)
+    pd.testing.assert_series_equal(model.f_est, test_data.loc["f_est"],
+                                   check_dtype=False,
+                                   check_index=False)
+    pd.testing.assert_series_equal(model.order, pd.Series([1,2]),
+                                   check_dtype=False,
+                                   check_index=False)
+    assert model.model("fs", 0) == approx(10)
+    assert model.model("fs", np.array([0, 0.5])) == approx([10, 9.25])
 
 def test_averagevalue(dataframe):
     """Test AverageValue class"""

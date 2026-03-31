@@ -41,7 +41,7 @@ class DiscretizationModel(ABC):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
         
         Parameters
         ----------
@@ -88,13 +88,13 @@ class SinglePower(DiscretizationModel):
     """Model discretization error with a single term power series"""
 
     #: Parameter keys for SinglePower
-    parameter_keys = ["f_est", "p", "alpha"]
+    parameter_keys = ["f_est", "alpha", "p"]
 
     def model(self,
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         The discretization model for a single term power series expansion is
 
@@ -119,7 +119,7 @@ class SinglePower(DiscretizationModel):
             System response quantity estimate
         """
         parameters = self.parameters[key]
-        return parameters.iloc[0] + parameters.iloc[2] * h**parameters.iloc[1]
+        return parameters.iloc[0] + parameters.iloc[1] * h**parameters.iloc[2]
     
     def solve(self, p_limits: list | tuple = [0,np.inf]):
         """Solve the model
@@ -167,8 +167,8 @@ class SinglePower(DiscretizationModel):
                                         bounds=bnds,
                                         )
             self.parameters.loc[self.parameter_keys[0], key] = popt[0] * self.parent.data[key][0]
-            self.parameters.loc[self.parameter_keys[1], key] = popt[2]
-            self.parameters.loc[self.parameter_keys[2], key] = popt[1] * self.parent.data[key][0] / self.parent.hs[0]**popt[2]
+            self.parameters.loc[self.parameter_keys[1], key] = popt[1] * self.parent.data[key][0] / self.parent.hs[0]**popt[2]
+            self.parameters.loc[self.parameter_keys[2], key] = popt[2]
     
     def f_est(self) -> pd.Series:
         """Return estimate of system response quantities
@@ -188,7 +188,102 @@ class SinglePower(DiscretizationModel):
         : pd.Series
             Observed convergence orders
         """
-        return self.parameters.loc[self.parameter_keys[1]]
+        return self.parameters.loc[self.parameter_keys[2]]
+    
+class FirstAndSecondOrder(DiscretizationModel):
+    """Model discretization error with a 1st and 2nd order power series"""
+
+    #: Parameter keys for SinglePower
+    parameter_keys = ["f_est", "alpha_1", "alpha_2"]
+
+    def model(self,
+              key: str,
+              h: int | float | np.ndarray
+    ) -> int | float | np.ndarray:
+        """Estimate system response quantity at provided discretizations
+
+        The discretization model for a 1st and 2nd order power series expansion
+        is
+
+        .. math::
+            f_h = f_0 + \\alpha_1 h^{1} + \\alpha_2 h^{2},
+
+        where :math:`f_h` is the system response quantity (SRQ) at a 
+        representative discretization size of :math:`h`, :math:`f_0` is the 
+        estimated SRQ for an infinitely fine mesh, :math:`\\alpha_1` is the 
+        1st order term coefficient, and :math:`\\alpha_2` is the 2nd order term
+        coefficient.
+        
+        Parameters
+        ----------
+        key : str
+            Key of system response quantity
+        h : int | float | np.ndarray
+            Discretization levels of interest
+        
+        Returns
+        -------
+        : int | float | np.ndarray
+            System response quantity estimate
+        """
+        parameters = self.parameters[key]
+        return parameters.iloc[0] + parameters.iloc[1]*h + parameters.iloc[2]*h**2
+    
+    def solve(self):
+        """Solve the model"""
+        # Define model to be solved by curve fitting method
+        def model_p(hs, f_est, alpha_1, alpha_2):
+            return f_est + alpha_1*hs + alpha_2*hs**2
+
+        # Normalize data for improved fitting
+        hs = self.parent.hs / self.parent.hs[0]
+        fs = self.parent.data / self.parent.data.iloc[0]
+
+        # Iterate over each key
+        for key in self.parent.keys:
+            fs_key = fs[key]
+            # Compute initial estimates for parameters
+            f_est_0 = fs_key[0]
+            alpha_1_0 = ((fs_key.iloc[-1] - fs_key.iloc[0])
+                         / (hs.iloc[-1] - hs.iloc[0]))
+            alpha_2_0 = ((fs_key.iloc[-1] - fs_key.iloc[0])
+                         / (hs.iloc[-1] - hs.iloc[0])**2)
+            bnds = ([-np.inf, -np.inf, -np.inf],
+                    [np.inf, np.inf, np.inf])
+            
+            # Solve
+            with warnings.catch_warnings():
+                if len(self.parent) == 3:
+                    warnings.filterwarnings("ignore", message="Covariance")
+                popt, pconv = curve_fit(model_p,
+                                        hs,
+                                        fs_key,
+                                        [f_est_0, alpha_1_0, alpha_2_0],
+                                        bounds=bnds,
+                                        )
+            self.parameters.loc[self.parameter_keys[0], key] = popt[0] * self.parent.data[key][0]
+            self.parameters.loc[self.parameter_keys[1], key] = popt[1] * self.parent.data[key][0] / self.parent.hs[0]**1
+            self.parameters.loc[self.parameter_keys[2], key] = popt[2] * self.parent.data[key][0] / self.parent.hs[0]**2
+    
+    def f_est(self) -> pd.Series:
+        """Return estimate of system response quantities
+        
+        Returns
+        -------
+        : pd.Series
+            System response quantity estimates
+        """
+        return self.parameters.loc[self.parameter_keys[0]]
+    
+    def order(self) -> pd.Series:
+        """Return observed convergence orders of system response quantities
+        
+        Returns
+        -------
+        : pd.Series
+            Observed convergence orders
+        """
+        return pd.Series([1,2])
     
 class AverageValue(DiscretizationModel):
     """Model discretization error as average of all values"""
@@ -200,7 +295,7 @@ class AverageValue(DiscretizationModel):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         AverageValue uses the average of all system response quantities (SRQ)s
         as the estimated true value. This model is useful for cases with 
@@ -263,7 +358,7 @@ class FinestValue(DiscretizationModel):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         FinestValue uses the system response quantity (SRQ) of the finest 
         result as its estimate. This model is useful if only the finest mesh
@@ -324,7 +419,7 @@ class MaximumValue(DiscretizationModel):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         MaximumValue uses the largest system response quantity (SRQ) of the 
         results. This model is useful if expert knowledge indicates this is the
@@ -385,7 +480,7 @@ class MinimumValue(DiscretizationModel):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         MinimumValue uses the smallest system response quantity (SRQ) of the 
         results. This model is useful if expert knowledge indicates this is the
@@ -674,8 +769,9 @@ class GCI(UncertaintyModel):
 
         References
         ----------
-        P. J. Roache, "Perspective: A Method for Uniform Reporting of Grid
-        Refinement Studies," Journal of Fluids Engineering, 116:3 (1994).
+        Patrick J. Roache, 1994, Perspective: A Method for Uniform Reporting of
+        Grid Refinement Studies, Journal of Fluids Engineering, 
+        116(3): 405-413. https://doi.org/10.1115/1.2910291.
         """
         gci = fs * self.parent.abs_estimated_error(key, index)
 
@@ -783,7 +879,7 @@ class DiscretizationError(ABC):
         arg1 : list | tuple | np.ndarray | pd.Series | dict | pd.DataFrame
             Discretization levels (list | tuple) or data (dict | pd.DataFrame)
         arg2 : list | tuple | np.ndarray | pd.Series | dict | str | None
-            System reponse quantities (list | tuple), mesh key (str), or None
+            System response quantities (list | tuple), mesh key (str), or None
         """
         # Create class data from arguments
         self._assign_data(arg1, arg2)
@@ -855,7 +951,7 @@ class DiscretizationError(ABC):
         arg1 : list | tuple | np.ndarray | pd.Series | dict | pd.DataFrame
             Discretization levels (list | tuple) or data (dict | pd.DataFrame)
         arg2 : list | tuple | np.ndarray | pd.Series | dict | str | None
-            System reponse quantities (list | tuple), mesh key (str), or None
+            System response quantities (list | tuple), mesh key (str), or None
         """
         if type(arg1) in [list, tuple, np.ndarray, pd.Series]:
             # Assign mesh sizes based on data type
@@ -1249,7 +1345,7 @@ class CustomDiscretizationError(DiscretizationError):
         arg1 : list | tuple | np.ndarray | pd.Series | dict | pd.DataFrame
             Discretization levels (list | tuple) or data (dict | pd.DataFrame)
         arg2 : list | tuple | np.ndarray | pd.Series | dict | str | None
-            System reponse quantities (list | tuple), mesh key (str), or None
+            System response quantities (list | tuple), mesh key (str), or None
         model : DiscretizationModel
             Discretization model class to use for analysis
         error : ErrorModel

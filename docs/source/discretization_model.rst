@@ -10,6 +10,10 @@ DiscretizationModel is the abstract base class for discretization error models. 
     :members:
     :show-inheritance:
 
+.. autoclass:: cfdverify.discretization.FirstAndSecondOrder
+    :members:
+    :show-inheritance:
+
 .. autoclass:: cfdverify.discretization.AverageValue
     :members:
     :show-inheritance:

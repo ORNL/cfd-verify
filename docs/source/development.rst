@@ -11,7 +11,7 @@ CFDverify's development process is described here. All regular development to CF
    #. Unit tests: All new code shall have unit tests. The goal of CFDverify is to have 100% coverage, but the precise extent of tests required for new code will be determined on a case-by-case basis.
    #. Regression tests: New methods should add regression tests based on primary literature of the method.
 
-#. Review: Pull requests shall be reviewed by a maintainer. Currently, CFDverify is mainly developed and maintained by a single individual and it is expected he may serve both roles. 
+#. Review: Pull requests shall be reviewed by a maintainer. Currently, CFDverify is mainly developed and maintained by a single individual, so it is expected he may serve both roles. 
 #. Merge: Reviewed and accepted code shall be merged into a development branch of CFDverify.
 #. Deploy: Development branches shall be merged into the main branch of CFDverify following semantic versioning 2.0.0 (see :ref:`semantic-versioning-label`).
 
