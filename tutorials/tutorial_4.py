@@ -31,7 +31,7 @@ print(f"Number of meshes: {len(model)}")
 # Get the relative error of simulation responses
 print(f"Relative error of DP: \n{model.relative_error('Vel')}")
 # Or you can get the absolute relative error
-print(f"Asbsolute relative error of DP: \n{model.abs_relative_error('Vel')}")
+print(f"Absolute relative error of DP: \n{model.abs_relative_error('Vel')}")
 
 # %%
 ## Data interpretation
