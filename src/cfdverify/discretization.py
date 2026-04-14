@@ -160,12 +160,16 @@ class SinglePower(DiscretizationModel):
             with warnings.catch_warnings():
                 if len(self.parent) == 3:
                     warnings.filterwarnings("ignore", message="Covariance")
-                popt, pconv = curve_fit(model_p,
-                                        hs,
-                                        fs_key,
-                                        [f_est_0, alpha_0, p_0],
-                                        bounds=bnds,
-                                        )
+                try:
+                    popt, pconv = curve_fit(model_p,
+                                            hs,
+                                            fs_key,
+                                            [f_est_0, alpha_0, p_0],
+                                            bounds=bnds,
+                                            )
+                except RuntimeError:
+                    print(f"Solution not found for {fs_key}! Setting to NaN!")
+                    popt = [np.nan, np.nan, np.nan]
             self.parameters.loc[self.parameter_keys[0], key] = popt[0] * self.parent.data[key][0]
             self.parameters.loc[self.parameter_keys[1], key] = popt[1] * self.parent.data[key][0] / self.parent.hs[0]**popt[2]
             self.parameters.loc[self.parameter_keys[2], key] = popt[2]
