@@ -1,5 +1,6 @@
 # Standard Python packages
 from abc import ABC, abstractmethod
+from typing import Union
 import warnings
 # Non-standard Python packages
 import numpy as np
@@ -39,8 +40,8 @@ class DiscretizationModel(ABC):
     @abstractmethod
     def model(self,
               key: str,
-              h: int | float | np.ndarray
-    ) -> int | float | np.ndarray:
+              h: Union[int, float, np.ndarray]
+    ) -> Union[int, float, np.ndarray]:
         """Estimate system response quantity at provided discretizations
         
         Parameters
@@ -92,8 +93,8 @@ class SinglePower(DiscretizationModel):
 
     def model(self,
               key: str,
-              h: int | float | np.ndarray
-    ) -> int | float | np.ndarray:
+              h: Union[int, float, np.ndarray]
+    ) -> Union[int, float, np.ndarray]:
         """Estimate system response quantity at provided discretizations
 
         The discretization model for a single term power series expansion is
@@ -121,7 +122,7 @@ class SinglePower(DiscretizationModel):
         parameters = self.parameters[key]
         return parameters.iloc[0] + parameters.iloc[1] * h**parameters.iloc[2]
     
-    def solve(self, p_limits: list | tuple = [0,np.inf]):
+    def solve(self, p_limits: Union[list, tuple] = [0,np.inf]):
         """Solve the model
         
         Parameters
@@ -202,8 +203,8 @@ class FirstAndSecondOrder(DiscretizationModel):
 
     def model(self,
               key: str,
-              h: int | float | np.ndarray
-    ) -> int | float | np.ndarray:
+              h: Union[int, float, np.ndarray]
+    ) -> Union[int, float, np.ndarray]:
         """Estimate system response quantity at provided discretizations
 
         The discretization model for a 1st and 2nd order power series expansion
@@ -297,8 +298,8 @@ class AverageValue(DiscretizationModel):
 
     def model(self,
               key: str,
-              h: int | float | np.ndarray
-    ) -> int | float | np.ndarray:
+              h: Union[int, float, np.ndarray]
+    ) -> Union[int, float, np.ndarray]:
         """Estimate system response quantity at provided discretizations
 
         AverageValue uses the average of all system response quantities (SRQ)s
@@ -360,8 +361,8 @@ class FinestValue(DiscretizationModel):
 
     def model(self,
               key: str,
-              h: int | float | np.ndarray
-    ) -> int | float | np.ndarray:
+              h: Union[int, float, np.ndarray]
+    ) -> Union[int, float, np.ndarray]:
         """Estimate system response quantity at provided discretizations
 
         FinestValue uses the system response quantity (SRQ) of the finest 
@@ -421,8 +422,8 @@ class MaximumValue(DiscretizationModel):
 
     def model(self,
               key: str,
-              h: int | float | np.ndarray
-    ) -> int | float | np.ndarray:
+              h: Union[int, float, np.ndarray]
+    ) -> Union[int, float, np.ndarray]:
         """Estimate system response quantity at provided discretizations
 
         MaximumValue uses the largest system response quantity (SRQ) of the 
@@ -482,8 +483,8 @@ class MinimumValue(DiscretizationModel):
 
     def model(self,
               key: str,
-              h: int | float | np.ndarray
-    ) -> int | float | np.ndarray:
+              h: Union[int, float, np.ndarray]
+    ) -> Union[int, float, np.ndarray]:
         """Estimate system response quantity at provided discretizations
 
         MinimumValue uses the smallest system response quantity (SRQ) of the 
@@ -556,9 +557,9 @@ class ErrorModel(ABC):
 
     @abstractmethod
     def error(self,
-              key: str | None = None,
-              index: int | None = None,
-    ) -> np.floating | pd.Series | pd.DataFrame:
+              key: Union[str, None] = None,
+              index: Union[int, None] = None,
+    ) -> Union[np.floating, pd.Series, pd.DataFrame]:
         """Error method
         
         Parameters
@@ -575,7 +576,7 @@ class ErrorModel(ABC):
         """
         pass
 
-    def get_data(self, key:str | None) -> pd.Series | pd.DataFrame:
+    def get_data(self, key: Union[str, None]) -> Union[pd.Series, pd.DataFrame]:
         """Return either all discretization data or key data
         
         Parameters
@@ -598,9 +599,9 @@ class EstimatedError(ErrorModel):
     """Compute errors relative to estimated response value"""
 
     def error(self,
-              key: str | None = None,
-              index: int | None = None,
-    ) -> np.floating | pd.Series | pd.DataFrame:
+              key: Union[str, None] = None,
+              index: Union[int, None] = None,
+    ) -> Union[np.floating, pd.Series, pd.DataFrame]:
         """Compute error relative to estimated zero discretization error value
 
         .. math::
@@ -635,9 +636,9 @@ class RelativeError(ErrorModel):
     """Compute errors relative to coarser response value"""
 
     def error(self,
-              key: str | None = None,
-              index: int | None = None,
-    ) -> np.floating | pd.Series | pd.DataFrame:
+              key: Union[str, None] = None,
+              index: Union[int, None] = None,
+    ) -> Union[np.floating, pd.Series, pd.DataFrame]:
         """Compute error relative to coarser discretization level
 
         Errors for all but the coarsest level are computed as
@@ -698,9 +699,9 @@ class UncertaintyModel(ABC):
     @abstractmethod
     def uncertainty(self,
                     key: str,
-                    index: int | None = None,
+                    index: Union[int, None] = None,
                     **kwargs,
-    ) -> np.floating | pd.Series:
+    ) -> Union[np.floating, pd.Series]:
         """Uncertainty method
         
         Parameters
@@ -722,10 +723,10 @@ class GCI(UncertaintyModel):
 
     def uncertainty(self,
                     key: str,
-                    index: int | None = None,
-                    fs: int | float = 1.25,
+                    index: Union[int, None] = None,
+                    fs: Union[int, float] = 1.25,
                     normalize: bool = False,
-    ) -> np.floating | pd.Series:
+    ) -> Union[np.floating, pd.Series]:
         """Compute Grid Convergence Index (GCI) for requested values
 
         The GCI method was proposed by Patrick Roache as a way to uniformly
@@ -792,9 +793,9 @@ class StudentsTDistribution(UncertaintyModel):
 
     def uncertainty(self,
                     key: str,
-                    index: int | None = None,
+                    index: Union[int, None] = None,
                     significance: float=0.05,
-    ) -> np.floating | pd.Series:
+    ) -> Union[np.floating, pd.Series]:
         """Compute uncertainty using Student's t distribution
 
         Student's t distribution is a generalization of the normal probability
@@ -839,9 +840,9 @@ class FactorOfSafety(UncertaintyModel):
 
     def uncertainty(self,
                     key: str,
-                    index: int | None = None,
-                    factor: int | float=3,
-    ) -> np.floating | pd.Series:
+                    index: Union[int, None] = None,
+                    factor: Union[int, float]=3,
+    ) -> Union[np.floating, pd.Series]:
         """Compute uncertainty as a constant factor of the error estimate
         
         Parameters
@@ -872,8 +873,8 @@ class DiscretizationError(ABC):
     """Abstract factory for discretization error classes"""
 
     def __init__(self,
-                 arg1: list | tuple | np.ndarray | pd.Series | dict | pd.DataFrame,
-                 arg2: list | tuple | np.ndarray | pd.Series | dict | str | None = None,
+                 arg1: Union[list, tuple, np.ndarray, pd.Series, dict, pd.DataFrame],
+                 arg2: Union[list, tuple, np.ndarray, pd.Series, dict, str, None] = None,
                 **kwargs,
     ) -> None:
         """Class constructor
@@ -945,8 +946,8 @@ class DiscretizationError(ABC):
         
     # Private methods #########################################################
     def _assign_data(self,
-                     arg1: list | tuple | np.ndarray | pd.Series | dict | pd.DataFrame,
-                     arg2: list | tuple | np.ndarray | pd.Series | dict | str | None = None,
+                     arg1: Union[list, tuple, np.ndarray, pd.Series, dict, pd.DataFrame],
+                     arg2: Union[list, tuple, np.ndarray, pd.Series, dict, str, None] = None,
     ) -> None:
         """Assign class data attributes based on input types
         
@@ -1089,9 +1090,9 @@ class DiscretizationError(ABC):
 
     # Data methods ############################################################
     def estimated_error(self,
-                        key: str | None = None,
-                        index: int | None = None,
-    ) -> np.floating | pd.Series | pd.DataFrame:
+                        key: Union[str, None] = None,
+                        index: Union[int, None] = None,
+    ) -> Union[np.floating, pd.Series, pd.DataFrame]:
         """Compute estimated error for data
 
         Parameters
@@ -1123,7 +1124,7 @@ class DiscretizationError(ABC):
     def abs_estimated_error(self,
                        key: str=None,
                        index: int=None,
-    ) -> np.floating | pd.Series | pd.DataFrame:
+    ) -> Union[np.floating, pd.Series, pd.DataFrame]:
         """Compute absolute estimated error for data
 
         Parameters
@@ -1142,9 +1143,9 @@ class DiscretizationError(ABC):
         return abs(self.estimated_error(key, index))
     
     def relative_error(self,
-                       key: str | None = None,
-                       index: int | None = None,
-    ) -> np.floating | pd.Series | pd.DataFrame:
+                       key: Union[str, None] = None,
+                       index: Union[int, None] = None,
+    ) -> Union[np.floating, pd.Series, pd.DataFrame]:
         """Compute error relative to coarser discretization level
 
         Errors for all but the coarsest level are computed as
@@ -1189,7 +1190,7 @@ class DiscretizationError(ABC):
     def abs_relative_error(self,
                        key: str=None,
                        index: int=None,
-    ) -> np.floating | pd.Series | pd.DataFrame:
+    ) -> Union[np.floating, pd.Series, pd.DataFrame]:
         """Compute absolute error relative to coarser discretization level
 
         Errors for all but the coarsest level are computed as
@@ -1218,7 +1219,7 @@ class DiscretizationError(ABC):
 
     # Output methods ##########################################################
     def plot(self,
-             key: str | None = None,
+             key: Union[str, None] = None,
              index : int = 0,
              filename: str="DiscretizationError.png",
              *,
@@ -1297,7 +1298,7 @@ class DiscretizationError(ABC):
         ax.legend()
         fig.savefig(filename, bbox_inches="tight", dpi=300)
     
-    def summarize(self, key: str | None = None) -> None:
+    def summarize(self, key: Union[str, None] = None) -> None:
         """Summarize the solution verification data
 
         If no key is provided, the first key in the data is used
@@ -1336,8 +1337,8 @@ class CustomDiscretizationError(DiscretizationError):
     """Discretization error class for custom implementations"""
 
     def __init__(self,
-                 arg1: list | tuple | np.ndarray | pd.Series | dict | pd.DataFrame,
-                 arg2: list | tuple | np.ndarray | pd.Series | dict | str | None = None,
+                 arg1: Union[list, tuple, np.ndarray, pd.Series, dict, pd.DataFrame],
+                 arg2: Union[list, tuple, np.ndarray, pd.Series, dict, str, None] = None,
                  model: DiscretizationModel=SinglePower,
                  error: ErrorModel=EstimatedError,
                  uncertainty: UncertaintyModel=GCI,
