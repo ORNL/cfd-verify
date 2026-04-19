@@ -139,8 +139,8 @@ class SinglePower(DiscretizationModel):
             raise ValueError("p_limits must be a list or tuple with two elements!")       
 
         # Normalize data for improved fitting
-        hs = self.parent.hs / self.parent.hs[0]
-        fs = self.parent.data / self.parent.data.iloc[0]
+        hs = self.parent.hs #/ self.parent.hs[0]
+        fs = self.parent.data #/ self.parent.data.iloc[0]
 
         # Iterate over each key
         for key in self.parent.keys:
@@ -535,6 +535,193 @@ class MinimumValue(DiscretizationModel):
             Observed convergence orders
         """
         return self.parameters.loc[self.parameter_keys[1]]
+    
+
+class ASME2008(DiscretizationModel):
+    """Model discretization error with a single term power series"""
+
+    #: Parameter keys for SinglePower
+    parameter_keys = ["f_est", "alpha", "p"]
+
+    def model(self,
+              key: str,
+              h: Union[int, float, np.ndarray]
+    ) -> Union[int, float, np.ndarray]:
+        """Estimate system response quantity at provided discretizations
+
+        The discretization model for a single term power series expansion is
+
+        .. math::
+            f_h = f_0 + \\alpha h^{\\hat{p}},
+
+        where :math:`f_h` is the system response quantity (SRQ) at a 
+        representative discretization size of :math:`h`, :math:`f_0` is the 
+        estimated SRQ with no discretization error, :math:`\\alpha` is the term
+        coefficient, and :math:`\\hat{p}` is the observed order of convergence.
+        
+        Parameters
+        ----------
+        key : str
+            Key of system response quantity
+        h : int | float | np.ndarray
+            Discretization levels of interest
+        
+        Returns
+        -------
+        : int | float | np.ndarray
+            System response quantity estimate
+        """
+        parameters = self.parameters[key]
+        return parameters.iloc[0] + parameters.iloc[1] * h**parameters.iloc[2]
+    
+    def solve(self, p_limits: Union[list, tuple] = [-np.inf,np.inf]):
+        """Solve the model
+        
+        Parameters
+        ----------
+        p_limits : list | tuple
+            Lower and upper limit for observed convergence order
+        """
+
+        # Normalize data for improved fitting
+        hs = self.parent.hs
+        fs = self.parent.data
+
+        if len(hs) != 3:
+            raise ValueError("Method only supports mesh triplets!")
+
+        e32 = fs.iloc[2,:] - fs.iloc[1,:]
+        e21 = fs.iloc[1,:] - fs.iloc[0,:]
+        error = np.log(np.abs(e32 / e21)) # Absolute value modification
+
+        if self.parent.refinement_ratios[0] == self.parent.refinement_ratios[1]:
+            # Start by computing order
+            r = self.parent.refinement_ratios[0]
+            p = error / np.log(r)
+            # Limit order
+            p = np.maximum(p, p_limits[0])
+            p = np.minimum(p, p_limits[1])
+            # Compute remaining terms
+            f_est = fs.iloc[0,:] + (fs.iloc[0,:] - fs.iloc[1,:]) / (r**p - 1)
+            alpha = (fs.iloc[0,:] - f_est) / hs[0]**p
+
+        else:
+            raise ValueError("Non-constant refinement ratios not currently supported!")
+
+        self.parameters.loc[self.parameter_keys[0]] = f_est
+        self.parameters.loc[self.parameter_keys[1]] = alpha
+        self.parameters.loc[self.parameter_keys[2]] = p
+    
+    def f_est(self) -> pd.Series:
+        """Return estimate of system response quantities
+        
+        Returns
+        -------
+        : pd.Series
+            System response quantity estimates
+        """
+        return self.parameters.loc[self.parameter_keys[0]]
+    
+    def order(self) -> pd.Series:
+        """Return observed convergence orders of system response quantities
+        
+        Returns
+        -------
+        : pd.Series
+            Observed convergence orders
+        """
+        return self.parameters.loc[self.parameter_keys[2]]
+
+class ROY2003(DiscretizationModel):
+    """Model discretization error with a single term power series"""
+
+    #: Parameter keys for SinglePower
+    parameter_keys = ["f_est", "alpha1", "alpha2"]
+
+    def model(self,
+              key: str,
+              h: Union[int, float, np.ndarray]
+    ) -> Union[int, float, np.ndarray]:
+        """Estimate system response quantity at provided discretizations
+
+        The discretization model for a single term power series expansion is
+
+        .. math::
+            f_h = f_0 + \\alpha_1 h^1 + \\alpha_2 h^2,
+
+        where :math:`f_h` is the system response quantity (SRQ) at a 
+        representative discretization size of :math:`h`, :math:`f_0` is the 
+        estimated SRQ with no discretization error, :math:`\\alpha_1` is the 
+        first-order term coefficient, and :math:`\\alpha_2` is the second-order
+        term coefficient.
+        
+        Parameters
+        ----------
+        key : str
+            Key of system response quantity
+        h : int | float | np.ndarray
+            Discretization levels of interest
+        
+        Returns
+        -------
+        : int | float | np.ndarray
+            System response quantity estimate
+        """
+        parameters = self.parameters[key]
+        return parameters.iloc[0] + parameters.iloc[1] * h  + parameters.iloc[2] * h**2
+    
+    def solve(self):
+        """Solve the model
+        """
+
+        # Normalize data for improved fitting
+        hs = self.parent.hs
+        fs = self.parent.data
+
+        if len(hs) != 3:
+            raise ValueError("Method only supports mesh triplets!")
+
+        e32 = fs.iloc[2,:] - fs.iloc[1,:]
+        e21 = fs.iloc[1,:] - fs.iloc[0,:]
+
+        if self.parent.refinement_ratios[0] == self.parent.refinement_ratios[1] == 2:
+            f_est = fs.iloc[0,:] + (e32 - 5 * e21) / 3
+            alpha_2 = (fs.iloc[1,:] - 2*fs.iloc[0,:] + f_est) / (2 * hs[0]**2)
+            alpha_1 = (fs.iloc[0,:] - f_est - alpha_2*hs[0]**2) / hs[0]          
+        
+        elif self.parent.refinement_ratios[0] == self.parent.refinement_ratios[1]:
+            r = self.parent.refinement_ratios[0]
+            f_est = fs.iloc[0,:] + (e32 - (r**2 + r - 1) * e21) / ((r + 1) * (r - 1)**2)
+            alpha_2 = (fs.iloc[1,:] - r*fs.iloc[0,:] + f_est*(r-1)) / (hs[0]**2 * (r**2 - r))
+            alpha_1 = (fs.iloc[0,:] - f_est - alpha_2*hs[0]**2) / hs[0] 
+
+        else:
+            raise ValueError("Non-constant refinement ratios not currently supported!")
+
+        self.parameters.loc[self.parameter_keys[0]] = f_est
+        self.parameters.loc[self.parameter_keys[1]] = alpha_1
+        self.parameters.loc[self.parameter_keys[2]] = alpha_2
+    
+    def f_est(self) -> pd.Series:
+        """Return estimate of system response quantities
+        
+        Returns
+        -------
+        : pd.Series
+            System response quantity estimates
+        """
+        return self.parameters.loc[self.parameter_keys[0]]
+    
+    def order(self) -> pd.Series:
+        """Return observed convergence orders of system response quantities
+        
+        Returns
+        -------
+        : pd.Series
+            Observed convergence orders
+        """
+        # FIXME
+        return np.nan
 
 ###############################################################################
 # ErrorModel
