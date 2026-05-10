@@ -18,7 +18,7 @@ While code developers often conduct code verification to ensure their solver is 
 Order of Accuracy
 -----------------
 
-Order of accuracy tests are the most rigorous code verification activity because they assess that the solver not only converges to the right value, but that it also converges at the formal order of accuracy. These tests often require solving the test problem on multiple meshes to ensure that the formal order is approached. It is common to not recover the *precise* formal order, but it is often sufficient to show that it is being asymptotically approached with refinement. This can require solving more than the minimum two discretization levels to conduct this test. Order of accuracy tests should be conducted with exact solutions for them best assurance; see the following two subsections for more details on the differences between exact and approximate solutions.
+Order of accuracy tests are the most rigorous code verification activity because they assess that the solver not only converges to the right value, but that it also converges at the formal order of accuracy. These tests often require solving the test problem on multiple meshes to observe the order of convergence. It is common to not recover the *precise* formal order, but it is often sufficient to show that it is being asymptotically approached with refinement. This can require solving more than the minimum two discretization levels to conduct this test. Order of accuracy tests should be conducted with exact solutions for their best assurance; see the following two subsections for more details on the differences between exact and approximate solutions.
 
 Exact Solutions
 ^^^^^^^^^^^^^^^

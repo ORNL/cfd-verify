@@ -1214,7 +1214,7 @@ class DiscretizationError(ABC):
         print("--------- \t ---------")
         for h, f in zip(self.hs, self.data[key]):
             print(f"{h:9.4g} \t {f:9.4g}")
-        print(f"Extrapolated Value: {self.f_est[key]:.6g}")
+        print(f"Extrapolated value: {self.f_est[key]:.6g}")
         print(f"Fine mesh error: {self.error(key, 0):.6g}")
         print(f"Fine mesh uncertainty: {self.u(key, 0):.6g}")
 
