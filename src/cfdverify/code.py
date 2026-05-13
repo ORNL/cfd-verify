@@ -169,12 +169,14 @@ class OrderOfAccuracy:
 
     # Plotting methods ########################################################
     def plot_response(
-            self, key: str,
-            plot_theoretical_orders: bool=True,
+            self, 
+            key: str,
+            filename: str="OrderOfAccuracy.png",
+            *,
+            title: str | None=None,
             xlabel: str | None=None,
             ylabel: str | None=None,
-            title: str | None=None,
-            save_figure: str | os.PathLike | bool | None=None,
+            plot_theoretical_orders: bool=True,
     ) -> None:
         """Plot specified key to visualize error convergence
         
@@ -182,18 +184,16 @@ class OrderOfAccuracy:
         ----------
         key : str
             Key of response to plot
-        plot_theoretical_orders : bool
-            Plot theoretical order lines for comparison. Defaults to true.
+        filename : str
+            Name of file to save figure to
+        title : str | None
+            Title for plot. Defaults to None.
         xlabel : str | None
             Label for x axis. Defaults to index name.
         ylabel : str | None
             Label for y axis. Defaults to response key.
-        title : str | None
-            Title for plot. Defaults to None.
-        save_figure: str | os.PathLike | bool | None
-            Save figure to file if true. Defaults to None, which doesn't save.
-            If a string or os.PathLike, saves to specified name. If True, saves
-            to "{key}_Convergence.png"
+        plot_theoretical_orders : bool
+            Plot theoretical order lines for comparison. Defaults to true.
         """
         order_key = self._order_key(key)
         mean_p_hat = self.p_hat[order_key].mean()
@@ -238,13 +238,7 @@ class OrderOfAccuracy:
             ax.set_title(title)
 
         ax.legend()
-
-        # Save figure, if desired
-        if isinstance(save_figure, (str, os.PathLike)):
-            fig.savefig(save_figure, bbox_inches="tight", dpi=300)
-        elif save_figure:
-            figure_title = f"{key}_Convergence.png"
-            fig.savefig(figure_title, bbox_inches="tight", dpi=300)
+        fig.savefig(filename, bbox_inches="tight", dpi=300)
 
 
     def plot_responses(
