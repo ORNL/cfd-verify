@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def mesh_size(domain: float, count: int, dim: int=3) -> np.ndarray:
     """Compute average discretization size
 
