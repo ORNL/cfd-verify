@@ -1,8 +1,11 @@
 import os
-from pytest import approx, raises
+
 import numpy as np
 import pandas as pd
+from pytest import approx, raises
+
 import cfdverify.discretization as dis
+
 
 ## Test DiscretizationError class
 # Test constructor options

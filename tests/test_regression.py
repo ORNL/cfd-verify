@@ -1,7 +1,7 @@
 from pytest import approx
 
-import cfdverify.utils as utils
 import cfdverify.discretization as dis
+import cfdverify.utils as utils
 
 
 def test_asme_procedure_phi1():
