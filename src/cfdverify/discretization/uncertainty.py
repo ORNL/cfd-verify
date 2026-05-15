@@ -196,3 +196,62 @@ class FactorOfSafety(UncertaintyModel):
             error = self.parent.error(key, index)
 
         return factor * abs(error)
+
+
+class Eca2014Uncertainty(UncertaintyModel):
+    """Computes uncertainty for Eca and Hoekstra 2014 Procedure"""
+
+    def uncertainty(self,
+                    key: str,
+                    index: Union[int, None] = None,
+    ) -> Union[np.floating, pd.Series]:
+        """Compute uncertainty as a constant factor of the error estimate
+
+        Parameters
+        ----------
+        key : str
+            Key of system response quantity of interest
+        index : int | None
+            Index of discretization level of interest or None for all levels
+
+        Returns
+        -------
+        : np.floating | pd.Series
+            Uncertainty of requested values using supplied factor of safety
+        """
+        # Get errors of model for all data points
+        errors = self.parent.error(key)
+        # Compute data range parameter, \Delta_f
+        data_range = (max(errors) - min(errors)) / (len(self.parent) - 1)
+        # Get predicted value of response from model
+        f_fit = self.parent.model.model(self.parent.hs)
+        # Error of fit 
+        error_fit = np.abs(data - f_fit)
+        # Standard deviation (FIXME, is absolute value correct?)
+        sigma = np.std(error_fit)
+
+        # Get error if vector or scalar
+        if index is None:
+            data = self.parent.data[key]
+            error = self.parent.error(key)
+        else:
+            data = self.parent.data[key].iloc[index]
+            error = self.parent.error(key, index)
+        
+        # Compute uncertainty based on if data range is less than std. dev.
+        if sigma < data_range:
+            # Set factor of safety by order
+            p = self.parent.model.parameters[2]
+            if p >= 0.5 and p <= 2:
+                factor = 1.25
+            else:
+                factor = 3
+            
+            u = factor * error + sigma + error_fit
+
+        else:
+            
+            u = 3 * (sigma / data_range) * (error + sigma + error_fit)
+
+        return u
+    

@@ -535,3 +535,184 @@ class MinimumValue(DiscretizationModel):
             Observed convergence orders
         """
         return self.parameters.loc[self.parameter_keys[1]]
+
+
+class Eca2014Error(DiscretizationModel):
+    """Model discretization error following Eca and Hoekstra 2014"""
+
+    #: Parameter keys for SinglePower
+    parameter_keys = ["f_est", "alpha", "p"]
+
+    def model(self,
+              key: str,
+              h: Union[int, float, np.ndarray]
+    ) -> Union[int, float, np.ndarray]:
+        """Estimate system response quantity at provided discretizations
+
+        The discretization model for a single term power series expansion is
+
+        .. math::
+            f_h = f_0 + \\alpha h^{\\hat{p}},
+
+        where :math:`f_h` is the system response quantity (SRQ) at a
+        representative discretization size of :math:`h`, :math:`f_0` is the
+        estimated SRQ with no discretization error, :math:`\\alpha` is the term
+        coefficient, and :math:`\\hat{p}` is the observed order of convergence.
+
+        Parameters
+        ----------
+        key : str
+            Key of system response quantity
+        h : int | float | np.ndarray
+            Discretization levels of interest
+
+        Returns
+        -------
+        : int | float | np.ndarray
+            System response quantity estimate
+        """
+        parameters = self.parameters[key]
+        return parameters.iloc[0] + parameters.iloc[1] * h**parameters.iloc[2]
+
+    def solve(self, p_limits: Union[list, tuple] = [0,np.inf]):
+        """Solve the model
+
+        Parameters
+        ----------
+        p_limits : list | tuple
+            Lower and upper limit for observed convergence order
+        """
+        # Define model to be solved by curve fitting method
+        def model_p(hs, f_est, alpha, p):
+            return f_est + alpha*hs**p
+        
+        def model_1(hs, f_est, alpha):
+            return f_est + alpha*hs**1
+        
+        def model_2(hs, f_est, alpha):
+            return f_est + alpha*hs**2
+        
+        def model_1and2(hs, f_est, alpha_1, alpha_2):
+            return f_est + alpha_1*hs**1 + alpha_2*hs**2
+
+        # Validate inputs
+        if len(p_limits) != 2 or (type(p_limits) is not list and type(p_limits) is not tuple):
+            raise ValueError("p_limits must be a list or tuple with two elements!")
+
+        # Normalize data for improved fitting
+        hs = self.parent.hs / self.parent.hs[0]
+        fs = self.parent.data / self.parent.data.iloc[0]
+
+        # Iterate over each key
+        for key in self.parent.keys:
+            fs_key = fs[key]
+            # Compute initial estimates for parameters
+            f_est_0 = fs_key[0]
+            p_0 = 1
+            if p_0 < p_limits[0]:
+                p_0 = p_limits[0]
+            elif p_0 > p_limits[1]:
+                p_0 = p_limits[1]
+            alpha_0 = ((fs_key.iloc[-1] - fs_key.iloc[0])
+                       / (hs.iloc[-1] - hs.iloc[0])**p_0)
+            bnds = ([-np.inf, -np.inf, p_limits[0]],
+                    [np.inf, np.inf, p_limits[1]])
+
+            # Solve
+            with warnings.catch_warnings():
+                if len(self.parent) == 3:
+                    warnings.filterwarnings("ignore", message="Covariance")
+                try:
+                    popt, _ = curve_fit(
+                        model_p,
+                        hs,
+                        fs_key,
+                        [f_est_0, alpha_0, p_0],
+                        bounds=bnds,
+                        )
+                except RuntimeError:
+                    print(f"Solution not found for {fs_key}! Setting to NaN!")
+                    popt = [np.nan, np.nan, np.nan]
+
+            if popt[2] >= 0.5 and popt[2] <= 2:
+                self.parameters.loc[self.parameter_keys[0], key] = popt[0] * self.parent.data[key][0]
+                self.parameters.loc[self.parameter_keys[1], key] = popt[1] * self.parent.data[key][0] / self.parent.hs[0]**popt[2]
+                self.parameters.loc[self.parameter_keys[2], key] = popt[2]
+            
+            elif popt[2] > 2:
+                try:
+                    popt_1, _ = curve_fit(
+                        model_1,
+                        hs,
+                        fs_key,
+                        [f_est_0, alpha_0]
+                        )
+                    popt_2, _ = curve_fit(
+                        model_2,
+                        hs,
+                        fs_key,
+                        [f_est_0, alpha_0]
+                        )
+                    
+                    # FIXME, compare here
+                    popt = popt_2
+
+                    self.parameters.loc[self.parameter_keys[0], key] = popt[0] * self.parent.data[key][0]
+                    self.parameters.loc[self.parameter_keys[1], key] = popt[1] * self.parent.data[key][0] / self.parent.hs[0]**popt[2]
+                    self.parameters.loc[self.parameter_keys[2], key] = popt[2]
+                    
+                except RuntimeError:
+                    print(f"Solution not found for {fs_key}! Setting to NaN!")
+                    popt = [np.nan, np.nan, np.nan]
+
+            else:
+                try:
+                    popt_1, _ = curve_fit(
+                        model_1,
+                        hs,
+                        fs_key,
+                        [f_est_0, alpha_0]
+                        )
+                    popt_2, _ = curve_fit(
+                        model_2,
+                        hs,
+                        fs_key,
+                        [f_est_0, alpha_0]
+                        )
+                    popt_1and2, _ = curve_fit(
+                        model_2,
+                        hs,
+                        fs_key,
+                        [f_est_0, alpha_0, alpha_0]
+                        )
+                    
+                    # FIXME, compare here
+                    popt = popt_2
+
+                    self.parameters.loc[self.parameter_keys[0], key] = popt[0] * self.parent.data[key][0]
+                    self.parameters.loc[self.parameter_keys[1], key] = popt[1] * self.parent.data[key][0] / self.parent.hs[0]**popt[2]
+                    self.parameters.loc[self.parameter_keys[2], key] = popt[2]
+                    
+                except RuntimeError:
+                    print(f"Solution not found for {fs_key}! Setting to NaN!")
+                    popt = [np.nan, np.nan, np.nan]
+
+    def f_est(self) -> pd.Series:
+        """Return estimate of system response quantities
+
+        Returns
+        -------
+        : pd.Series
+            System response quantity estimates
+        """
+        return self.parameters.loc[self.parameter_keys[0]]
+
+    def order(self) -> pd.Series:
+        """Return observed convergence orders of system response quantities
+
+        Returns
+        -------
+        : pd.Series
+            Observed convergence orders
+        """
+        return self.parameters.loc[self.parameter_keys[2]]
