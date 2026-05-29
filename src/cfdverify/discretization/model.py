@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, least_squares
 
 ###############################################################################
 # DiscretizationModel
@@ -540,24 +540,61 @@ class MinimumValue(DiscretizationModel):
 class Eca2014Error(DiscretizationModel):
     """Model discretization error following Eca and Hoekstra 2014"""
 
-    #: Parameter keys for SinglePower
-    parameter_keys = ["f_est", "alpha", "p"]
+    # Parameter keys and model are unknown until fit
+    parameter_keys = []
+    model_representation = None
+
+    # Define model options
+    def model_p(hs, f_est, alpha, p):
+        return f_est + alpha*hs**p
+        
+    def model_1(hs, f_est, alpha):
+        return f_est + alpha*hs**1
+    
+    def model_2(hs, f_est, alpha):
+        return f_est + alpha*hs**2
+    
+    def model_1and2(hs, f_est, alpha_1, alpha_2):
+        return f_est + alpha_1*hs**1 + alpha_2*hs**2
+    
+    # Define residual functions for least squares fitting
+    def residual_p(params, hs, fs):
+        f_est, alpha, p = params
+        return f_est + alpha*hs**p - fs
+
+    def residual_1(params, hs, fs):
+        f_est, alpha = params
+        return f_est + alpha*hs - fs
+
+    def residual_2(params, hs, fs):
+        f_est, alpha = params
+        return f_est + alpha*hs**2 - fs
+
+    def residual_1and2(params, hs, fs):
+        f_est, alpha_1, alpha_2 = params
+        return f_est + alpha_1*hs + alpha_2*hs**2 - fs
+
+    def residual_p_weighted(params, hs, fs, weights):
+        f_est, alpha, p = params
+        return weights * (f_est + alpha*hs**p - fs)
+
+    def residual_1_weighted(params, hs, fs, weights):
+        f_est, alpha = params
+        return weights * (f_est + alpha*hs - fs)
+
+    def residual_2_weighted(params, hs, fs, weights):
+        f_est, alpha = params
+        return weights * (f_est + alpha*hs**2 - fs)
+
+    def residual_1and2_weighted(params, hs, fs, weights):
+        f_est, alpha_1, alpha_2 = params
+        return weights * (f_est + alpha_1*hs + alpha_2*hs**2 - fs)
 
     def model(self,
               key: str,
               h: Union[int, float, np.ndarray]
     ) -> Union[int, float, np.ndarray]:
         """Estimate system response quantity at provided discretizations
-
-        The discretization model for a single term power series expansion is
-
-        .. math::
-            f_h = f_0 + \\alpha h^{\\hat{p}},
-
-        where :math:`f_h` is the system response quantity (SRQ) at a
-        representative discretization size of :math:`h`, :math:`f_0` is the
-        estimated SRQ with no discretization error, :math:`\\alpha` is the term
-        coefficient, and :math:`\\hat{p}` is the observed order of convergence.
 
         Parameters
         ----------
@@ -572,32 +609,42 @@ class Eca2014Error(DiscretizationModel):
             System response quantity estimate
         """
         parameters = self.parameters[key]
-        return parameters.iloc[0] + parameters.iloc[1] * h**parameters.iloc[2]
+        f_est = parameters.iloc[0]
 
-    def solve(self, p_limits: Union[list, tuple] = [0,np.inf]):
+        if self.model_representation == "model_p":
+            alpha = parameters.iloc[1]
+            p = parameters.iloc[2]
+            fs = self.model_p(h, f_est, alpha, p)
+        elif self.model_representation == "model_1":
+            alpha = parameters.iloc[1]
+            fs = self.model_1(h, f_est, alpha)
+        elif self.model_representation == "model_2":
+            alpha = parameters.iloc[1]
+            fs = self.model_2(h, f_est, alpha)
+        elif self.model_representation == "model_1and2":
+            alpha_1 = parameters.iloc[1]
+            alpha_2 = parameters.iloc[2]
+            fs = self.model_2(h, f_est, alpha_1, alpha_2)
+        else:
+            raise ValueError("Invalid model representation!")
+        
+        return fs
+
+    def solve(self, p_formal: int = 2):
         """Solve the model
 
         Parameters
         ----------
-        p_limits : list | tuple
-            Lower and upper limit for observed convergence order
+        p_formal : int
+            Formal order of convergence of solver
         """
-        # Define model to be solved by curve fitting method
-        def model_p(hs, f_est, alpha, p):
-            return f_est + alpha*hs**p
-        
-        def model_1(hs, f_est, alpha):
-            return f_est + alpha*hs**1
-        
-        def model_2(hs, f_est, alpha):
-            return f_est + alpha*hs**2
-        
-        def model_1and2(hs, f_est, alpha_1, alpha_2):
-            return f_est + alpha_1*hs**1 + alpha_2*hs**2
+        # Error if less than four grids.  Can't compute standard deviation of fits.
+        if len(self.parent) < 4:
+            raise ValueError("This method requires at least four discretization levels!")
 
-        # Validate inputs
-        if len(p_limits) != 2 or (type(p_limits) is not list and type(p_limits) is not tuple):
-            raise ValueError("p_limits must be a list or tuple with two elements!")
+        # Compute weights. Appendix B.1
+        inverse_hs = 1 /self.parent.hs
+        weights = inverse_hs / np.sum(inverse_hs)
 
         # Normalize data for improved fitting
         hs = self.parent.hs / self.parent.hs[0]
@@ -609,93 +656,111 @@ class Eca2014Error(DiscretizationModel):
             # Compute initial estimates for parameters
             f_est_0 = fs_key[0]
             p_0 = 1
-            if p_0 < p_limits[0]:
-                p_0 = p_limits[0]
-            elif p_0 > p_limits[1]:
-                p_0 = p_limits[1]
+            if p_0 > p_formal:
+                p_0 = p_formal
             alpha_0 = ((fs_key.iloc[-1] - fs_key.iloc[0])
                        / (hs.iloc[-1] - hs.iloc[0])**p_0)
-            bnds = ([-np.inf, -np.inf, p_limits[0]],
-                    [np.inf, np.inf, p_limits[1]])
 
-            # Solve
-            with warnings.catch_warnings():
-                if len(self.parent) == 3:
-                    warnings.filterwarnings("ignore", message="Covariance")
-                try:
-                    popt, _ = curve_fit(
-                        model_p,
-                        hs,
-                        fs_key,
-                        [f_est_0, alpha_0, p_0],
-                        bounds=bnds,
-                        )
-                except RuntimeError:
-                    print(f"Solution not found for {fs_key}! Setting to NaN!")
-                    popt = [np.nan, np.nan, np.nan]
-
-            if popt[2] >= 0.5 and popt[2] <= 2:
-                self.parameters.loc[self.parameter_keys[0], key] = popt[0] * self.parent.data[key][0]
-                self.parameters.loc[self.parameter_keys[1], key] = popt[1] * self.parent.data[key][0] / self.parent.hs[0]**popt[2]
-                self.parameters.loc[self.parameter_keys[2], key] = popt[2]
+            # 1. Solve for unknown order first. 
+            # 1a. Fit weighted and unweighted equations
+            result_p = least_squares(self.residual_p, (f_est_0, alpha_0, p_0), args=(hs, fs))
+            result_pw = least_squares(self.residual_p_weighted, (f_est_0, alpha_0, p_0), args=(hs, fs, weights))
+            # 1b. Take result with smallest standard deviation
+            if np.std(result_p.fun) < np.std(result_pw.fun):
+                result = result_p
+            else:
+                result = result_pw
+            # 1c. If result is between p=0.5 and formal order, use fit
+            if result[2] >= 0.5 and result[2] <= p_formal:
+                self.model_representation = "model_p"
+                self.parameter_keys = ["f_est", "alpha", "p"]
+                self.parameters.loc[self.parameter_keys[0], key] = result[0] * self.parent.data[key][0]
+                self.parameters.loc[self.parameter_keys[1], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**result[2]
+                self.parameters.loc[self.parameter_keys[2], key] = result[2]
             
-            elif popt[2] > 2:
-                try:
-                    popt_1, _ = curve_fit(
-                        model_1,
-                        hs,
-                        fs_key,
-                        [f_est_0, alpha_0]
-                        )
-                    popt_2, _ = curve_fit(
-                        model_2,
-                        hs,
-                        fs_key,
-                        [f_est_0, alpha_0]
-                        )
-                    
-                    # FIXME, compare here
-                    popt = popt_2
-
-                    self.parameters.loc[self.parameter_keys[0], key] = popt[0] * self.parent.data[key][0]
-                    self.parameters.loc[self.parameter_keys[1], key] = popt[1] * self.parent.data[key][0] / self.parent.hs[0]**popt[2]
-                    self.parameters.loc[self.parameter_keys[2], key] = popt[2]
-                    
-                except RuntimeError:
-                    print(f"Solution not found for {fs_key}! Setting to NaN!")
-                    popt = [np.nan, np.nan, np.nan]
+            elif result[2] > p_formal:
+                # 2. Solve for 1st or 2nd order if exceeding formal order
+                # 2a. Fit weighted and unweighted equations
+                result_1 = least_squares(self.residual_1, (f_est_0, alpha_0), args=(hs, fs))
+                result_1w = least_squares(self.residual_1_weighted, (f_est_0, alpha_0), args=(hs, fs, weights))
+                result_2 = least_squares(self.residual_2, (f_est_0, alpha_0), args=(hs, fs))
+                result_2w = least_squares(self.residual_2_weighted, (f_est_0, alpha_0), args=(hs, fs, weights))
+                # 2b. Take result with smallest standard deviation
+                sigmas = [np.std(result_1.fun),
+                          np.std(result_1w.fun),
+                          np.std(result_2.fun),
+                          np.std(result_2w.fun)]
+                index = sigmas.index(np.min(sigmas))
+                if index == 0:
+                    result = result_1
+                    self.model_representation = "model_1"
+                elif index == 1:
+                    result = result_1w
+                    self.model_representation = "model_1"
+                elif index == 2:
+                    result = result_2
+                    self.model_representation = "model_2"
+                else:
+                    result = result_2w
+                    self.model_representation = "model_2"
+                # 2c. Compute parameters from model
+                self.parameter_keys = ["f_est", "alpha"]
+                self.parameters.loc[self.parameter_keys[0], key] = result[0] * self.parent.data[key][0]
+                if self.model_representation == "model_1":
+                    self.parameters.loc[self.parameter_keys[1], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**1
+                else:
+                    self.parameters.loc[self.parameter_keys[1], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**2
 
             else:
-                try:
-                    popt_1, _ = curve_fit(
-                        model_1,
-                        hs,
-                        fs_key,
-                        [f_est_0, alpha_0]
-                        )
-                    popt_2, _ = curve_fit(
-                        model_2,
-                        hs,
-                        fs_key,
-                        [f_est_0, alpha_0]
-                        )
-                    popt_1and2, _ = curve_fit(
-                        model_2,
-                        hs,
-                        fs_key,
-                        [f_est_0, alpha_0, alpha_0]
-                        )
-                    
-                    # FIXME, compare here
-                    popt = popt_2
+                # 3. Solve for 1st, 2nd, and mixed order if order is less than 0.5
+                # 3a. Fit weighted and unweighted equations
+                result_1 = least_squares(self.residual_1, (f_est_0, alpha_0), args=(hs, fs))
+                result_1w = least_squares(self.residual_1_weighted, (f_est_0, alpha_0), args=(hs, fs, weights))
+                result_2 = least_squares(self.residual_2, (f_est_0, alpha_0), args=(hs, fs))
+                result_2w = least_squares(self.residual_2_weighted, (f_est_0, alpha_0), args=(hs, fs, weights))
+                result_1and2 = least_squares(self.residual_1and2, (f_est_0, alpha_0, alpha_0), args=(hs, fs))
+                result_1and2w = least_squares(self.residual_1and2_weighted, (f_est_0, alpha_0, alpha_0), args=(hs, fs, weights))
+                # 3b. Take result with smallest standard deviation
+                sigmas = [np.std(result_1.fun),
+                          np.std(result_1w.fun),
+                          np.std(result_2.fun),
+                          np.std(result_2w.fun),
+                          np.std(result_1and2.fun),
+                          np.std(result_1and2w.fun)]
+                index = sigmas.index(np.min(sigmas))
+                if index == 0:
+                    result = result_1
+                    self.model_representation = "model_1"
+                elif index == 1:
+                    result = result_1w
+                    self.model_representation = "model_1"
+                elif index == 2:
+                    result = result_2
+                    self.model_representation = "model_2"
+                elif index == 3:
+                    result = result_2w
+                    self.model_representation = "model_2"
+                elif index == 4:
+                    result = result_1and2
+                    self.model_representation = "model_1and2"
+                else:
+                    result = result_1and2w
+                    self.model_representation = "model_1and2"
 
-                    self.parameters.loc[self.parameter_keys[0], key] = popt[0] * self.parent.data[key][0]
-                    self.parameters.loc[self.parameter_keys[1], key] = popt[1] * self.parent.data[key][0] / self.parent.hs[0]**popt[2]
-                    self.parameters.loc[self.parameter_keys[2], key] = popt[2]
-                    
-                except RuntimeError:
-                    print(f"Solution not found for {fs_key}! Setting to NaN!")
-                    popt = [np.nan, np.nan, np.nan]
+                # 3c. Compute parameters from model
+                self.parameters.loc[self.parameter_keys[0], key] = result[0] * self.parent.data[key][0]
+                if self.model_representation == "model_1":
+                    self.parameter_keys = ["f_est", "alpha"]
+                    self.parameters.loc[self.parameter_keys[1], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**1
+                elif self.model_representation == "model_2":
+                    self.parameter_keys = ["f_est", "alpha"]
+                    self.parameters.loc[self.parameter_keys[1], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**2
+                else:
+                    self.parameter_keys = ["f_est", "alpha_1", "alpha_2"]
+                    # FIXME, broken
+                    self.parameters.loc[self.parameter_keys[1], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**1
+                    self.parameters.loc[self.parameter_keys[2], key] = result[2] * self.parent.data[key][0] / self.parent.hs[0]**2
+
 
     def f_est(self) -> pd.Series:
         """Return estimate of system response quantities
