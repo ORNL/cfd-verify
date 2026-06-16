@@ -41,7 +41,7 @@ class DiscretizationModel(ABC):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
         
         Parameters
         ----------
@@ -94,7 +94,7 @@ class SinglePower(DiscretizationModel):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         The discretization model for a single term power series expansion is
 
@@ -200,7 +200,7 @@ class AverageValue(DiscretizationModel):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         AverageValue uses the average of all system response quantities (SRQ)s
         as the estimated true value. This model is useful for cases with 
@@ -263,7 +263,7 @@ class FinestValue(DiscretizationModel):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         FinestValue uses the system response quantity (SRQ) of the finest 
         result as its estimate. This model is useful if only the finest mesh
@@ -324,7 +324,7 @@ class MaximumValue(DiscretizationModel):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         MaximumValue uses the largest system response quantity (SRQ) of the 
         results. This model is useful if expert knowledge indicates this is the
@@ -385,7 +385,7 @@ class MinimumValue(DiscretizationModel):
               key: str,
               h: int | float | np.ndarray
     ) -> int | float | np.ndarray:
-        """Estimate system response quantity at provided discertizations
+        """Estimate system response quantity at provided discretizations
 
         MinimumValue uses the smallest system response quantity (SRQ) of the 
         results. This model is useful if expert knowledge indicates this is the
@@ -783,7 +783,7 @@ class DiscretizationError(ABC):
         arg1 : list | tuple | np.ndarray | pd.Series | dict | pd.DataFrame
             Discretization levels (list | tuple) or data (dict | pd.DataFrame)
         arg2 : list | tuple | np.ndarray | pd.Series | dict | str | None
-            System reponse quantities (list | tuple), mesh key (str), or None
+            System response quantities (list | tuple), mesh key (str), or None
         """
         # Create class data from arguments
         self._assign_data(arg1, arg2)
@@ -855,7 +855,7 @@ class DiscretizationError(ABC):
         arg1 : list | tuple | np.ndarray | pd.Series | dict | pd.DataFrame
             Discretization levels (list | tuple) or data (dict | pd.DataFrame)
         arg2 : list | tuple | np.ndarray | pd.Series | dict | str | None
-            System reponse quantities (list | tuple), mesh key (str), or None
+            System response quantities (list | tuple), mesh key (str), or None
         """
         if type(arg1) in [list, tuple, np.ndarray, pd.Series]:
             # Assign mesh sizes based on data type
@@ -1214,7 +1214,7 @@ class DiscretizationError(ABC):
         print("--------- \t ---------")
         for h, f in zip(self.hs, self.data[key]):
             print(f"{h:9.4g} \t {f:9.4g}")
-        print(f"Extrapolated Value: {self.f_est[key]:.6g}")
+        print(f"Extrapolated value: {self.f_est[key]:.6g}")
         print(f"Fine mesh error: {self.error(key, 0):.6g}")
         print(f"Fine mesh uncertainty: {self.u(key, 0):.6g}")
 
@@ -1249,7 +1249,7 @@ class CustomDiscretizationError(DiscretizationError):
         arg1 : list | tuple | np.ndarray | pd.Series | dict | pd.DataFrame
             Discretization levels (list | tuple) or data (dict | pd.DataFrame)
         arg2 : list | tuple | np.ndarray | pd.Series | dict | str | None
-            System reponse quantities (list | tuple), mesh key (str), or None
+            System response quantities (list | tuple), mesh key (str), or None
         model : DiscretizationModel
             Discretization model class to use for analysis
         error : ErrorModel

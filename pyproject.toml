@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cfdverify"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name="Justin Weinmeister", email="weinmeistejr@ornl.gov" },
 ]
 description = "A package to conduct solution verification for CFD"
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
