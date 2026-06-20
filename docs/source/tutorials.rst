@@ -3,7 +3,7 @@ Tutorials
 
 .. toctree::
 
-The tutorials sub-directory contains scripts to help new users learn CFDverify. There are currently five tutorial scripts containing quick examples of how to run CFDverify for solution verification analysis. Additionally, the sub-directory contains the same scripts in Jupyter notebook form (.ipynb) if you prefer to conduct your analysis in Jupyter notebooks.
+The tutorials subdirectory contains scripts to help new users learn CFDverify. There are currently five tutorial scripts containing quick examples of how to run CFDverify for solution verification analysis. Additionally, the subdirectory contains the same scripts in Jupyter notebook form (.ipynb) if you prefer to conduct your analysis in Jupyter notebooks.
 
 The tutorials are:
 

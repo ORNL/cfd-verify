@@ -1,5 +1,7 @@
 import pytest
+
 import cfdverify.utils as utils
+
 
 def test_mesh_size():
     assert utils.mesh_size(100, 10, 3) == pytest.approx(10**(1/3))
