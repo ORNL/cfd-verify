@@ -27,7 +27,7 @@ If you prefer to install from the `source <https://github.com/ORNL/cfd-verify>`_
     source /path/to/your/venv/bin/activate
     pip install .
 
-To install dependencies for testing the code, install with the command :code:`pip install .[tests]`. Likewise, to install documentation dependencies use the command :code:`pip install .[docs]`. Alternatively, install all optional dependencies using the command :code:`pip install .[full]`.
+To install dependencies for testing the code, install with the command :code:`pip install .[tests]`. Likewise, to install documentation dependencies use the command :code:`pip install .[docs]`. Alternatively, install all optional dependencies using the command :code:`pip install .[full]`. The full installation includes additional helpful modules that a user will likely need for scientific computing workflow in the `utilities` optional dependency lists (e.g. `ipykernel` for running interactive Jupyter notebooks). Users new to scientific computing are recommended to use the full install.
 
 Documentation
 -------------

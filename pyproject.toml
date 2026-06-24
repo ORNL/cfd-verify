@@ -37,6 +37,9 @@ docs = [
   "sphinx",
   "sphinx-rtd-theme",
 ]
+utilities = [
+  "ipykernel",
+]
 full = [
-    "cfdverify[tests, docs]",
+    "cfdverify[tests, docs, utilities]",
 ]
