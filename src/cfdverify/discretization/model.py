@@ -537,11 +537,17 @@ class MinimumValue(DiscretizationModel):
         return self.parameters.loc[self.parameter_keys[1]]
 
 
-class Eca2014Model(DiscretizationModel):
-    """Model discretization error following Eca and Hoekstra 2014"""
+class EçaHoekstra2014Model(DiscretizationModel):
+    """Model discretization error following Eça and Hoekstra 2014"""
 
     # Parameters are a combination of all possible parameters
     parameter_keys = ["model", "f_est", "alpha_1", "p_1", "alpha_2", "p_2"]
+
+    # Used for uncertainty fitting
+    p_fit = None 
+    p_formal = None 
+    weights = None
+    std = None
 
     # Define model options
     @staticmethod
@@ -600,6 +606,35 @@ class Eca2014Model(DiscretizationModel):
     def residual_1and2_weighted(params, hs, fs, weights):
         f_est, alpha_1, alpha_2 = params
         return weights * (f_est + alpha_1*hs + alpha_2*hs**2 - fs)
+    
+    # Define standard deviation functions
+    @staticmethod
+    def std_model_p(fs, hs, f_est, alpha, p, weights):
+        weight = len(fs) * weights
+        err = (fs - (f_est + alpha * hs**p))**2
+        std = np.sqrt(np.sum(weight * err) / (len(fs)-3))
+        return std
+
+    @staticmethod
+    def std_model_1(fs, hs, f_est, alpha, weights):
+        weight = len(fs) * weights
+        err = (fs - (f_est + alpha * hs**1))**2
+        std = np.sqrt(np.sum(weight * err) / (len(fs)-3))
+        return std
+
+    @staticmethod
+    def std_model_2(fs, hs, f_est, alpha, weights):
+        weight = len(fs) * weights
+        err = (fs - (f_est + alpha * hs**2))**2
+        std = np.sqrt(np.sum(weight * err) / (len(fs)-3))
+        return std
+
+    @staticmethod
+    def std_model_1and2(fs, hs, f_est, alpha_1, alpha_2, weights):
+        weight = len(fs) * weights
+        err = (fs - (f_est + alpha_1 * hs**1 + alpha_2 * hs**2))**2
+        std = np.sqrt(np.sum(weight * err) / (len(fs)-3))
+        return std
 
     def model(self,
               key: str,
@@ -652,14 +687,17 @@ class Eca2014Model(DiscretizationModel):
         # Error if less than four grids.  Can't compute standard deviation of fits.
         if len(self.parent) < 4:
             raise ValueError("This method requires at least four discretization levels!")
+        
+        self.p_formal = p_formal
 
         # Compute weights. Appendix B.1
         inverse_hs = 1 /self.parent.hs
         weights = inverse_hs / np.sum(inverse_hs)
 
-        # Normalize data for improved fitting
-        hs = self.parent.hs / self.parent.hs[0]
-        fs = self.parent.data / self.parent.data.iloc[0]
+        # Get data
+        # TODO, consider normalizing in the future
+        hs = self.parent.hs #/ self.parent.hs[0]
+        fs = self.parent.data #/ self.parent.data.iloc[0]
 
         # Iterate over each key
         for key in self.parent.keys:
@@ -679,13 +717,16 @@ class Eca2014Model(DiscretizationModel):
             # 1b. Take result with smallest standard deviation
             if np.std(result_p.fun) < np.std(result_pw.fun):
                 result = result_p.x
+                self.std = np.std(result_p.fun)
             else:
                 result = result_pw.x
+                self.std = np.std(result_pw.fun)
+            self.p_fit = result[0]
             # 1c. If result is between p=0.5 and formal order, use fit
             if result[2] >= 0.5 and result[2] <= p_formal:
                 self.parameters.loc[self.parameter_keys[0], key] = "model_p"
-                self.parameters.loc[self.parameter_keys[1], key] = result[0] * self.parent.data[key][0]
-                self.parameters.loc[self.parameter_keys[2], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**result[2]
+                self.parameters.loc[self.parameter_keys[1], key] = result[0] #* self.parent.data[key][0]
+                self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**result[2]
                 self.parameters.loc[self.parameter_keys[3], key] = result[2]
                 self.parameters.loc[self.parameter_keys[4], key] = np.nan
                 self.parameters.loc[self.parameter_keys[5], key] = np.nan
@@ -706,25 +747,29 @@ class Eca2014Model(DiscretizationModel):
                 if index == 0:
                     result = result_1.x
                     model_representation = "model_1"
+                    self.std = np.std(result_1.fun)
                 elif index == 1:
                     result = result_1w.x
                     model_representation = "model_1"
+                    self.std = np.std(result_1w.fun)
                 elif index == 2:
                     result = result_2.x
                     model_representation = "model_2"
+                    self.std = np.std(result_2.fun)
                 else:
                     result = result_2w.x
                     model_representation = "model_2"
+                    self.std = np.std(result_2w.fun)
                 # 2c. Compute parameters from model
                 if model_representation == "model_1":
                     self.parameters.loc[self.parameter_keys[0], key] = "model_1"
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**1
+                    self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**1
                     self.parameters.loc[self.parameter_keys[3], key] = 1
                 else:
                     self.parameters.loc[self.parameter_keys[0], key] = "model_2"
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**2
+                    self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**2
                     self.parameters.loc[self.parameter_keys[3], key] = 2
-                self.parameters.loc[self.parameter_keys[1], key] = result[0] * self.parent.data[key][0]
+                self.parameters.loc[self.parameter_keys[1], key] = result[0] #* self.parent.data[key][0]
                 self.parameters.loc[self.parameter_keys[4], key] = np.nan
                 self.parameters.loc[self.parameter_keys[5], key] = np.nan
 
@@ -748,43 +793,49 @@ class Eca2014Model(DiscretizationModel):
                 if index == 0:
                     result = result_1.x
                     model_representation = "model_1"
+                    self.std = np.std(result_1.fun)
                 elif index == 1:
                     result = result_1w.x
                     model_representation = "model_1"
+                    self.std = np.std(result_1w.fun)
                 elif index == 2:
                     result = result_2.x
                     model_representation = "model_2"
+                    self.std = np.std(result_2.fun)
                 elif index == 3:
                     result = result_2w.x
                     model_representation = "model_2"
+                    self.std = np.std(result_2w.fun)
                 elif index == 4:
                     result = result_1and2.x
                     model_representation = "model_1and2"
+                    self.std = np.std(result_1and2.fun)
                 else:
                     result = result_1and2w.x
                     model_representation = "model_1and2"
+                    self.std = np.std(result_1and2w.fun)
 
                 # 3c. Compute parameters from model
                 if model_representation == "model_1":
                     self.parameters.loc[self.parameter_keys[0], key] = "model_1"
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**1
+                    self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**1
                     self.parameters.loc[self.parameter_keys[3], key] = 1
                     self.parameters.loc[self.parameter_keys[4], key] = np.nan
                     self.parameters.loc[self.parameter_keys[5], key] = np.nan
                 elif model_representation == "model_2":
                     self.parameters.loc[self.parameter_keys[0], key] = "model_2"
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**2
+                    self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**2
                     self.parameters.loc[self.parameter_keys[3], key] = 2
                     self.parameters.loc[self.parameter_keys[4], key] = np.nan
                     self.parameters.loc[self.parameter_keys[5], key] = np.nan
                 else:
                     self.parameters.loc[self.parameter_keys[0], key] = "model_1and2"
                     # FIXME, broken
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1] * self.parent.data[key][0] / self.parent.hs[0]**1
+                    self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**1
                     self.parameters.loc[self.parameter_keys[3], key] = 1
-                    self.parameters.loc[self.parameter_keys[4], key] = result[2] * self.parent.data[key][0] / self.parent.hs[0]**2
+                    self.parameters.loc[self.parameter_keys[4], key] = result[2] #* self.parent.data[key][0] / self.parent.hs[0]**2
                     self.parameters.loc[self.parameter_keys[5], key] = 2
-                self.parameters.loc[self.parameter_keys[1], key] = result[0] * self.parent.data[key][0]
+                self.parameters.loc[self.parameter_keys[1], key] = result[0] #* self.parent.data[key][0]
 
 
     def f_est(self) -> pd.Series:
