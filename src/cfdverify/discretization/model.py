@@ -693,6 +693,7 @@ class EçaHoekstra2014Model(DiscretizationModel):
         # Compute weights. Appendix B.1
         inverse_hs = 1 /self.parent.hs
         weights = inverse_hs / np.sum(inverse_hs)
+        n = len(weights)
 
         # Get data
         # TODO, consider normalizing in the future
@@ -715,13 +716,15 @@ class EçaHoekstra2014Model(DiscretizationModel):
             result_p = least_squares(self.residual_p, (f_est_0, alpha_0, p_0), args=(hs, fs_key))
             result_pw = least_squares(self.residual_p_weighted, (f_est_0, alpha_0, p_0), args=(hs, fs_key, weights))
             # 1b. Take result with smallest standard deviation
-            if np.std(result_p.fun) < np.std(result_pw.fun):
+            std_p = np.sqrt(result_p.fun @ np.identity(n) @ result_p.fun / (n - 3))
+            std_pw = np.sqrt(result_pw.fun @ np.diag(n*weights) @ result_pw.fun / (n - 3))
+            if std_p < std_pw:
                 result = result_p.x
-                self.std = np.std(result_p.fun)
+                self.std = std_p
             else:
                 result = result_pw.x
-                self.std = np.std(result_pw.fun)
-            self.p_fit = result[0]
+                self.std = std_pw
+            self.p_fit = result[2]
             # 1c. If result is between p=0.5 and formal order, use fit
             if result[2] >= 0.5 and result[2] <= p_formal:
                 self.parameters.loc[self.parameter_keys[0], key] = "model_p"
@@ -739,27 +742,28 @@ class EçaHoekstra2014Model(DiscretizationModel):
                 result_2 = least_squares(self.residual_2, (f_est_0, alpha_0), args=(hs, fs_key))
                 result_2w = least_squares(self.residual_2_weighted, (f_est_0, alpha_0), args=(hs, fs_key, weights))
                 # 2b. Take result with smallest standard deviation
-                sigmas = [np.std(result_1.fun),
-                          np.std(result_1w.fun),
-                          np.std(result_2.fun),
-                          np.std(result_2w.fun)]
+                std_1 = np.sqrt(result_1.fun @ np.identity(n) @ result_1.fun / (n - 2))
+                std_1w = np.sqrt(result_1w.fun @ np.diag(n*weights) @ result_1w.fun / (n - 2))
+                std_2 = np.sqrt(result_2.fun @ np.identity(n) @ result_2.fun / (n - 2))
+                std_2w = np.sqrt(result_2w.fun @ np.diag(n*weights) @ result_2w.fun / (n - 2))
+                sigmas = [std_1, std_1w, std_2, std_2w]
                 index = sigmas.index(np.min(sigmas))
                 if index == 0:
                     result = result_1.x
                     model_representation = "model_1"
-                    self.std = np.std(result_1.fun)
+                    self.std = std_1
                 elif index == 1:
                     result = result_1w.x
                     model_representation = "model_1"
-                    self.std = np.std(result_1w.fun)
+                    self.std = std_1w
                 elif index == 2:
                     result = result_2.x
                     model_representation = "model_2"
-                    self.std = np.std(result_2.fun)
+                    self.std = std_2
                 else:
                     result = result_2w.x
                     model_representation = "model_2"
-                    self.std = np.std(result_2w.fun)
+                    self.std = std_2w
                 # 2c. Compute parameters from model
                 if model_representation == "model_1":
                     self.parameters.loc[self.parameter_keys[0], key] = "model_1"
@@ -783,37 +787,38 @@ class EçaHoekstra2014Model(DiscretizationModel):
                 result_1and2 = least_squares(self.residual_1and2, (f_est_0, alpha_0, alpha_0), args=(hs, fs_key))
                 result_1and2w = least_squares(self.residual_1and2_weighted, (f_est_0, alpha_0, alpha_0), args=(hs, fs_key, weights))
                 # 3b. Take result with smallest standard deviation
-                sigmas = [np.std(result_1.fun),
-                          np.std(result_1w.fun),
-                          np.std(result_2.fun),
-                          np.std(result_2w.fun),
-                          np.std(result_1and2.fun),
-                          np.std(result_1and2w.fun)]
+                std_1 = np.sqrt(result_1.fun @ np.identity(n) @ result_1.fun / (n - 2))
+                std_1w = np.sqrt(result_1w.fun @ np.diag(n*weights) @ result_1w.fun / (n - 2))
+                std_2 = np.sqrt(result_2.fun @ np.identity(n) @ result_2.fun / (n - 2))
+                std_2w = np.sqrt(result_2w.fun @ np.diag(n*weights) @ result_2w.fun / (n - 2))
+                std_1and2 = np.sqrt(result_1and2.fun @ np.identity(n) @ result_1and2.fun / (n - 3))
+                std_1and2w = np.sqrt(result_1and2w.fun @ np.diag(n*weights) @ result_1and2w.fun / (n - 3))
+                sigmas = [std_1, std_1w, std_2, std_2w, std_1and2, std_1and2w]
                 index = sigmas.index(np.min(sigmas))
                 if index == 0:
                     result = result_1.x
                     model_representation = "model_1"
-                    self.std = np.std(result_1.fun)
+                    self.std = std_1
                 elif index == 1:
                     result = result_1w.x
                     model_representation = "model_1"
-                    self.std = np.std(result_1w.fun)
+                    self.std = std_1w
                 elif index == 2:
                     result = result_2.x
                     model_representation = "model_2"
-                    self.std = np.std(result_2.fun)
+                    self.std = std_2
                 elif index == 3:
                     result = result_2w.x
                     model_representation = "model_2"
-                    self.std = np.std(result_2w.fun)
+                    self.std = std_2w
                 elif index == 4:
                     result = result_1and2.x
                     model_representation = "model_1and2"
-                    self.std = np.std(result_1and2.fun)
+                    self.std = std_1and2
                 else:
                     result = result_1and2w.x
                     model_representation = "model_1and2"
-                    self.std = np.std(result_1and2w.fun)
+                    self.std = std_1and2w
 
                 # 3c. Compute parameters from model
                 if model_representation == "model_1":
@@ -830,10 +835,9 @@ class EçaHoekstra2014Model(DiscretizationModel):
                     self.parameters.loc[self.parameter_keys[5], key] = np.nan
                 else:
                     self.parameters.loc[self.parameter_keys[0], key] = "model_1and2"
-                    # FIXME, broken
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**1
+                    self.parameters.loc[self.parameter_keys[2], key] = result[1]  
                     self.parameters.loc[self.parameter_keys[3], key] = 1
-                    self.parameters.loc[self.parameter_keys[4], key] = result[2] #* self.parent.data[key][0] / self.parent.hs[0]**2
+                    self.parameters.loc[self.parameter_keys[4], key] = result[2] 
                     self.parameters.loc[self.parameter_keys[5], key] = 2
                 self.parameters.loc[self.parameter_keys[1], key] = result[0] #* self.parent.data[key][0]
 
