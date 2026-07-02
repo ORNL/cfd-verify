@@ -27,6 +27,16 @@ def dataframe(hs, fs, gs) -> pd.DataFrame:
 
 
 @pytest.fixture(scope="package")
+def dataframe4() -> pd.DataFrame:
+    data = pd.DataFrame(
+        {"hs": [0.1, 0.2, 0.35, 0.5], 
+         "fs": [9.97, 9.88, 9.6325, 9.25], 
+         "gs": [10.3, 10.6, 11.05, 11.5]}
+    )
+    return data
+
+
+@pytest.fixture(scope="package")
 def osc_dataframe(hs) -> pd.DataFrame:
     osc_data = {"hs": hs,
                 "fs": [10.2, 9.5, 10.3],
