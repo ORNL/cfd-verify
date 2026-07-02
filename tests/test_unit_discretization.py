@@ -290,6 +290,24 @@ def test_minimumvalue(dataframe):
     assert model.model("fs", 0) == approx(9.25)
     assert model.model("fs", np.array([0, 0.5])) == approx([9.25, 9.25])
 
+def test_eca2014model(dataframe4):
+    """Test Eca2014Model class"""
+    model = dis.CustomDiscretizationError(dataframe4, model=dis.Eca2014Model)
+    test_data = pd.DataFrame({"fs": ["model_2", 10.0, -3.0, 2, np.nan, np.nan],
+                              "gs": ["model_p", 10.0, 3.0, 1.0, np.nan, np.nan]},
+                             index=["model", "f_est", "alpha_1", "p_1", "alpha_2", "p_2"])
+    assert model.model.parameter_keys == list(test_data.index)
+    pd.testing.assert_frame_equal(model.model.parameters, test_data,
+                                  check_dtype=False)
+    pd.testing.assert_series_equal(model.f_est, test_data.loc["f_est"],
+                                   check_dtype=False,
+                                   check_index=False)
+    pd.testing.assert_frame_equal(model.order, test_data.loc[["p_1", "p_2"]],
+                                  check_dtype=False)
+    assert model.model("fs", 0) == approx(10)
+    assert model.model("fs", np.array([0, 0.5])) == approx([10, 9.25])
+
+
 # Test error models
 def test_estimatederror(dataframe):
     """Test EstimatedError class"""

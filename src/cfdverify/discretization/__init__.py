@@ -9,6 +9,7 @@ from .error import (
 )
 from .model import (
     AverageValue,
+    Eca2014Model,
     FinestValue,
     FirstAndSecondOrder,
     MaximumValue,
