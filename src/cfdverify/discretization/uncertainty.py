@@ -198,8 +198,11 @@ class FactorOfSafety(UncertaintyModel):
         return factor * abs(error)
 
 
-class Eca2014Uncertainty(UncertaintyModel):
-    """Computes uncertainty for Eca and Hoekstra 2014 Procedure"""
+class EçaHoekstra2014Uncertainty(UncertaintyModel):
+    """Computes uncertainty for Eça and Hoekstra 2014 Procedure
+    
+    This method is only compatible with the EçaHoekstra2014Model class.
+    """
 
     def uncertainty(self,
                     key: str,
@@ -219,39 +222,41 @@ class Eca2014Uncertainty(UncertaintyModel):
         : np.floating | pd.Series
             Uncertainty of requested values using supplied factor of safety
         """
-        # Get errors of model for all data points
-        errors = self.parent.error(key)
-        # Compute data range parameter, \Delta_f
-        data_range = (max(errors) - min(errors)) / (len(self.parent) - 1)
-        # Get predicted value of response from model
-        f_fit = self.parent.model.model(self.parent.hs)
-        # Error of fit 
-        error_fit = np.abs(data - f_fit)
-        # Standard deviation (FIXME, is absolute value correct?)
-        sigma = np.std(error_fit)
-
-        # Get error if vector or scalar
+        # Compute fitting error
         if index is None:
-            data = self.parent.data[key]
-            error = self.parent.error(key)
+            fs = self.parent.data[key]
+            hs = self.parent.hs
         else:
-            data = self.parent.data[key].iloc[index]
-            error = self.parent.error(key, index)
-        
-        # Compute uncertainty based on if data range is less than std. dev.
-        if sigma < data_range:
-            # Set factor of safety by order
-            p = self.parent.model.parameters[2]
-            if p >= 0.5 and p <= 2:
-                factor = 1.25
-            else:
-                factor = 3
-            
-            u = factor * error + sigma + error_fit
+            fs = self.parent.data[key].iloc[index]
+            hs = self.parent.hs.iloc[index]
+        error_fit = np.abs(fs - self.parent.model.model(key, hs))
+        # Standard deviation of fit
+        sigma = self.parent.model.std
+        # Discretization error estimate
+        error = np.abs(self.parent.error(key, index))
 
+        # Appendix A: Step 2
+        # Compute data range parameter, Eq. 19.
+        all_fs = self.parent.data[key]
+        data_range = (max(all_fs) - min(all_fs)) / (len(self.parent) - 1)
+        
+        # Appendix A: Step 3
+        # Set factor of safety
+        p = self.parent.model.p_fit
+        p_formal = self.parent.model.p_formal
+        if p >= 0.5 and p < p_formal*1.05 and sigma < data_range:
+            Fs = 1.25
         else:
-            
-            u = 3 * (sigma / data_range) * (error + sigma + error_fit)
+            Fs = 3
+        
+        # Appendix A: Step 4
+        # Compute uncertainty
+        if sigma < data_range:
+            # Eq. 20
+            u = Fs*error + sigma + error_fit 
+        else:
+            # Eq. 21, note difference in parenthesis
+            u = Fs * (sigma / data_range) * (error + sigma + error_fit)
 
         return u
     

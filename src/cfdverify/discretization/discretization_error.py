@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 
 from .error import ErrorModel, EstimatedError
-from .model import AverageValue, DiscretizationModel, SinglePower
-from .uncertainty import GCI, StudentsTDistribution, UncertaintyModel
+from .model import AverageValue, DiscretizationModel, SinglePower, EçaHoekstra2014Model
+from .uncertainty import GCI, StudentsTDistribution, UncertaintyModel, EçaHoekstra2014Uncertainty
 
 ###############################################################################
 # DiscretizationError
@@ -624,3 +624,36 @@ class Average(DiscretizationError):
             Uncertainty model for the data
         """
         return StudentsTDistribution(self)
+
+class EçaHoekstra2014(DiscretizationError):
+    """Follows the procedure from Eça and Hoekstra 2014"""
+
+    def create_model(self) -> DiscretizationModel:
+        """Create EçaHoekstra2014 discretization model for analysis
+
+        Returns
+        -------
+        : DiscretizationModel
+            Discretization model for the data
+        """
+        return EçaHoekstra2014Model(self)
+
+    def create_error(self) -> ErrorModel:
+        """Create EstimatedError error model for analysis
+
+        Returns
+        -------
+        : ErrorModel
+            Error model for the data
+        """
+        return EstimatedError(self)
+
+    def create_uncertainty(self) -> UncertaintyModel:
+        """Create EçaHoekstra2014 uncertainty model for analysis
+
+        Returns
+        -------
+        : UncertaintyModel
+            Uncertainty model for the data
+        """
+        return EçaHoekstra2014Uncertainty(self)
