@@ -24,3 +24,7 @@ The discretization module is designed to help you conduct solution verification 
 .. autoclass:: cfdverify.discretization.CustomDiscretizationError
     :members:
     :show-inheritance:
+
+.. autoclass:: cfdverify.discretization.EçaHoekstra2014
+    :members:
+    :show-inheritance:

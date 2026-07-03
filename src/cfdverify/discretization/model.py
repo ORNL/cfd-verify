@@ -538,7 +538,16 @@ class MinimumValue(DiscretizationModel):
 
 
 class EçaHoekstra2014Model(DiscretizationModel):
-    """Model discretization error following Eça and Hoekstra 2014"""
+    """Model discretization error following the procedure given by Eça and 
+    Hoekstra in their 2014 paper
+    
+    References
+    ----------
+    2014, L Eça and M. Hoekstra, A Procedure for the Estimation of the 
+    Numerical Uncertainty of CFD Calculations Based on Grid Refinement Studies,
+    Journal of Computational Physics, 262: 104-130. 
+    https://doi.org/10.1016/j.jcp.2014.01.006 
+    """
 
     # Parameters are a combination of all possible parameters
     parameter_keys = ["model", "f_est", "alpha_1", "p_1", "alpha_2", "p_2"]
