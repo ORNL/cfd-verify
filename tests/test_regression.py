@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+import pytest
 from pytest import approx
 
 import cfdverify.discretization as dis
@@ -65,3 +68,12 @@ def test_first_and_second_order_literature(roy_2003):
     model = dis.CustomDiscretizationError(roy_data, model=dis.FirstAndSecondOrder)
 
     assert model.f_est.values == approx(roy_exact, rel=0.05)
+
+@pytest.mark.xfail
+def test_eçahoekstra2014_fig9(eçahoekstra2014_fig9):
+    model = dis.EçaHoekstra2014(eçahoekstra2014_fig9)
+    order1 = pd.Series([1.37, 0.98, 1, 2, 1.65, 1.04], dtype=object, name="p_1")
+    order2 = pd.Series([np.nan, np.nan, 2, np.nan, np.nan, np.nan], dtype=object, name="p_2")
+
+    pd.testing.assert_series_equal(model.parameters.loc["p_1"], order1, check_index=False)
+    pd.testing.assert_series_equal(model.parameters.loc["p_2"], order2, check_index=False)

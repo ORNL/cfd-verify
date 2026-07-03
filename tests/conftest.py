@@ -51,6 +51,12 @@ def least_squared_error_1() -> pd.DataFrame:
 
 
 @pytest.fixture(scope="package")
+def eçahoekstra2014_fig9() -> pd.DataFrame:
+    path = Path(__file__).parent.resolve()
+    return pd.read_csv(Path(path, "resources", "eçahoekstra2014_fig9.csv"))
+
+
+@pytest.fixture(scope="package")
 def custom(dataframe):
     return CustomDiscretizationError(dataframe)
 
