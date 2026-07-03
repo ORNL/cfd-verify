@@ -383,3 +383,11 @@ def test_factorofsafety(dataframe):
     pd.testing.assert_series_equal(model.uncertainty("gs"), test_data["gs"])
     assert model.uncertainty("fs", 2) == approx(test_data["fs"][2])
     assert model.uncertainty("fs", 2, 2) == approx(test_data["fs"][2] * 2/3)
+
+def test_eçahoekstra2014uncertainty(dataframe4):
+    model = dis.EçaHoekstra2014(dataframe4)
+    test_data = 1.25 * pd.DataFrame({"fs": [0.03, 0.12, 0.3675, 0.75],
+                                     "gs": [0.3, 0.6, 1.05, 1.5]})
+    pd.testing.assert_series_equal(model.uncertainty("fs"), test_data["fs"])
+    pd.testing.assert_series_equal(model.uncertainty("gs"), test_data["gs"])
+    assert model.uncertainty("fs", 2) == approx(test_data["fs"][2])
