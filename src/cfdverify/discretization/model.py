@@ -544,6 +544,7 @@ class EçaHoekstra2014Model(DiscretizationModel):
     parameter_keys = ["model", "f_est", "alpha_1", "p_1", "alpha_2", "p_2"]
 
     # Used for uncertainty fitting
+    # FIXME, doesn't work for multiple keys
     p_fit = None 
     p_formal = None 
     weights = None
@@ -691,21 +692,20 @@ class EçaHoekstra2014Model(DiscretizationModel):
             # 1a. Fit weighted and unweighted equations
             result_p = least_squares(self.residual_p, (f_est_0, alpha_0, p_0), args=(hs, fs_key))
             result_pw = least_squares(self.residual_p_weighted, (f_est_0, alpha_0, p_0), args=(hs, fs_key, weights))
+            results = [result_p, result_pw]
             # 1b. Take result with smallest standard deviation
             std_p = self.fit_std_dev(result_p.fun, np.identity(n), n, 3)
             std_pw = self.fit_std_dev(result_pw.fun, np.diag(n*weights), n, 3)
-            if std_p < std_pw:
-                model_representation = "model_p"
-                f_est = result_p.x[0]
-                alphas = [result_p.x[1], np.nan]
-                orders = [result_p.x[2], np.nan]
-                self.std = std_p
-            else:
-                model_representation = "model_p"
-                f_est = result_pw.x[0]
-                alphas = [result_pw.x[1], np.nan]
-                orders = [result_pw.x[2], np.nan]
-                self.std = std_pw
+            sigmas = [std_p, std_pw]
+            index = sigmas.index(np.min(sigmas))
+            result = results[index]
+            self.std = sigmas[index]
+            model_representation = "model_p"
+            f_est = result.x[0]
+            alphas = [result.x[1], np.nan]
+            orders = [result.x[2], np.nan]
+
+            # Store fit for factor of safety calculation
             self.p_fit = orders[0]
             # 1c. If result is between p=0.5 and formal order, use fit
             if orders[0] >= 0.5 and orders[0] <= p_formal:
@@ -718,6 +718,7 @@ class EçaHoekstra2014Model(DiscretizationModel):
                 result_1w = least_squares(self.residual_1_weighted, (f_est_0, alpha_0), args=(hs, fs_key, weights))
                 result_2 = least_squares(self.residual_2, (f_est_0, alpha_0), args=(hs, fs_key))
                 result_2w = least_squares(self.residual_2_weighted, (f_est_0, alpha_0), args=(hs, fs_key, weights))
+                results = [result_1, result_1w, result_2, result_2w]
                 # 2b. Take result with smallest standard deviation
                 std_1 = self.fit_std_dev(result_1.fun, np.identity(n), n, 2)
                 std_1w = self.fit_std_dev(result_1w.fun, np.diag(n*weights), n, 2)
@@ -725,30 +726,16 @@ class EçaHoekstra2014Model(DiscretizationModel):
                 std_2w = self.fit_std_dev(result_2w.fun, np.diag(n*weights), n, 2)
                 sigmas = [std_1, std_1w, std_2, std_2w]
                 index = sigmas.index(np.min(sigmas))
-                if index == 0:
+                result = results[index]
+                self.std = sigmas[index]
+                f_est = result.x[0]
+                alphas = [result.x[1], np.nan]
+                if index == 0 or index == 1:
                     model_representation = "model_1"
-                    f_est = result_1.x[0]
-                    alphas = [result_1.x[1], np.nan]
                     orders = [1, np.nan]
-                    self.std = std_1
-                elif index == 1:
-                    model_representation = "model_1"
-                    f_est = result_1w.x[0]
-                    alphas = [result_1w.x[1], np.nan]
-                    orders = [1, np.nan]
-                    self.std = std_1w
-                elif index == 2:
+                elif index == 2 or index == 3:
                     model_representation = "model_2"
-                    f_est = result_2.x[0]
-                    alphas = [result_2.x[1], np.nan]
-                    orders = [2, np.nan]
-                    self.std = std_2
-                else:
-                    model_representation = "model_2"
-                    f_est = result_2w.x[0]
-                    alphas = [result_2w.x[1], np.nan]
-                    orders = [2, np.nan]
-                    self.std = std_2w
+                    orders = [2, np.nan]              
 
             else:
                 # 3. Solve for 1st, 2nd, and mixed order if order is less than 0.5
@@ -759,6 +746,7 @@ class EçaHoekstra2014Model(DiscretizationModel):
                 result_2w = least_squares(self.residual_2_weighted, (f_est_0, alpha_0), args=(hs, fs_key, weights))
                 result_1and2 = least_squares(self.residual_1and2, (f_est_0, alpha_0, alpha_0), args=(hs, fs_key))
                 result_1and2w = least_squares(self.residual_1and2_weighted, (f_est_0, alpha_0, alpha_0), args=(hs, fs_key, weights))
+                results = [result_1, result_1w, result_2, result_2w, result_1and2, result_1and2w]
                 # 3b. Take result with smallest standard deviation
                 std_1 = self.fit_std_dev(result_1.fun, np.identity(n), n, 2)
                 std_1w = self.fit_std_dev(result_1w.fun, np.diag(n*weights), n, 2)
@@ -768,42 +756,21 @@ class EçaHoekstra2014Model(DiscretizationModel):
                 std_1and2w = self.fit_std_dev(result_1and2w.fun, np.diag(n*weights), n, 3)
                 sigmas = [std_1, std_1w, std_2, std_2w, std_1and2, std_1and2w]
                 index = sigmas.index(np.min(sigmas))
-                if index == 0:
+                result = results[index]
+                self.std = sigmas[index]
+                f_est = result.x[0]
+                if index == 0 or index == 1:
                     model_representation = "model_1"
-                    f_est = result_1.x[0]
-                    alphas = [result_1.x[1], np.nan]
+                    alphas = [result.x[1], np.nan]
                     orders = [1, np.nan]
-                    self.std = std_1
-                elif index == 1:
-                    model_representation = "model_1"
-                    f_est = result_1w.x[0]
-                    alphas = [result_1w.x[1], np.nan]
-                    orders = [1, np.nan]
-                    self.std = std_1w
-                elif index == 2:
+                elif index == 2 or index == 3:
                     model_representation = "model_2"
-                    f_est = result_2.x[0]
-                    alphas = [result_2.x[1], np.nan]
+                    alphas = [result.x[1], np.nan]
                     orders = [2, np.nan]
-                    self.std = std_2
-                elif index == 3:
-                    model_representation = "model_2"
-                    f_est = result_2w.x[0]
-                    alphas = [result_2w.x[1], np.nan]
-                    orders = [2, np.nan]
-                    self.std = std_2w
-                elif index == 4:
+                elif index == 4 or index == 5:
                     model_representation = "model_1and2"
-                    f_est = result_1and2.x[0]
-                    alphas = [result_1and2.x[1], result_1and2.x[2]]
+                    alphas = [result.x[1], result.x[2]]
                     orders = [1, 2]
-                    self.std = std_1and2
-                else:
-                    model_representation = "model_1and2"
-                    f_est = result_1and2w.x[0]
-                    alphas = [result_1and2w.x[1], result_1and2w.x[2]]
-                    orders = [1, 2]
-                    self.std = std_1and2w
 
             # 4. Compute parameters from model
             self.parameters.loc[self.parameter_keys[0], key] = model_representation
