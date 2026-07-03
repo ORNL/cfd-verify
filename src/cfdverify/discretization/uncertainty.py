@@ -258,5 +258,8 @@ class EçaHoekstra2014Uncertainty(UncertaintyModel):
             # Eq. 21, note difference in parenthesis
             u = Fs * (sigma / data_range) * (error + sigma + error_fit)
 
-        return u
+        if index is None:
+            return pd.Series(u, name=key)
+        else:
+            return u
     
