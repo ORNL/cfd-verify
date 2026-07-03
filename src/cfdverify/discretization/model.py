@@ -607,34 +607,10 @@ class EçaHoekstra2014Model(DiscretizationModel):
         f_est, alpha_1, alpha_2 = params
         return weights * (f_est + alpha_1*hs + alpha_2*hs**2 - fs)
     
-    # Define standard deviation functions
     @staticmethod
-    def std_model_p(fs, hs, f_est, alpha, p, weights):
-        weight = len(fs) * weights
-        err = (fs - (f_est + alpha * hs**p))**2
-        std = np.sqrt(np.sum(weight * err) / (len(fs)-3))
-        return std
-
-    @staticmethod
-    def std_model_1(fs, hs, f_est, alpha, weights):
-        weight = len(fs) * weights
-        err = (fs - (f_est + alpha * hs**1))**2
-        std = np.sqrt(np.sum(weight * err) / (len(fs)-3))
-        return std
-
-    @staticmethod
-    def std_model_2(fs, hs, f_est, alpha, weights):
-        weight = len(fs) * weights
-        err = (fs - (f_est + alpha * hs**2))**2
-        std = np.sqrt(np.sum(weight * err) / (len(fs)-3))
-        return std
-
-    @staticmethod
-    def std_model_1and2(fs, hs, f_est, alpha_1, alpha_2, weights):
-        weight = len(fs) * weights
-        err = (fs - (f_est + alpha_1 * hs**1 + alpha_2 * hs**2))**2
-        std = np.sqrt(np.sum(weight * err) / (len(fs)-3))
-        return std
+    def fit_std_dev(residuals, weights, n, ddof):
+        return np.sqrt(residuals @ weights @ residuals / (n - ddof))
+    
 
     def model(self,
               key: str,
@@ -716,25 +692,26 @@ class EçaHoekstra2014Model(DiscretizationModel):
             result_p = least_squares(self.residual_p, (f_est_0, alpha_0, p_0), args=(hs, fs_key))
             result_pw = least_squares(self.residual_p_weighted, (f_est_0, alpha_0, p_0), args=(hs, fs_key, weights))
             # 1b. Take result with smallest standard deviation
-            std_p = np.sqrt(result_p.fun @ np.identity(n) @ result_p.fun / (n - 3))
-            std_pw = np.sqrt(result_pw.fun @ np.diag(n*weights) @ result_pw.fun / (n - 3))
+            std_p = self.fit_std_dev(result_p.fun, np.identity(n), n, 3)
+            std_pw = self.fit_std_dev(result_pw.fun, np.diag(n*weights), n, 3)
             if std_p < std_pw:
-                result = result_p.x
+                model_representation = "model_p"
+                f_est = result_p.x[0]
+                alphas = [result_p.x[1], np.nan]
+                orders = [result_p.x[2], np.nan]
                 self.std = std_p
             else:
-                result = result_pw.x
+                model_representation = "model_p"
+                f_est = result_pw.x[0]
+                alphas = [result_pw.x[1], np.nan]
+                orders = [result_pw.x[2], np.nan]
                 self.std = std_pw
-            self.p_fit = result[2]
+            self.p_fit = orders[0]
             # 1c. If result is between p=0.5 and formal order, use fit
-            if result[2] >= 0.5 and result[2] <= p_formal:
-                self.parameters.loc[self.parameter_keys[0], key] = "model_p"
-                self.parameters.loc[self.parameter_keys[1], key] = result[0] #* self.parent.data[key][0]
-                self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**result[2]
-                self.parameters.loc[self.parameter_keys[3], key] = result[2]
-                self.parameters.loc[self.parameter_keys[4], key] = np.nan
-                self.parameters.loc[self.parameter_keys[5], key] = np.nan
+            if orders[0] >= 0.5 and orders[0] <= p_formal:
+                pass
                             
-            elif result[2] > p_formal:
+            elif orders[0] > p_formal:
                 # 2. Solve for 1st or 2nd order if exceeding formal order
                 # 2a. Fit weighted and unweighted equations
                 result_1 = least_squares(self.residual_1, (f_est_0, alpha_0), args=(hs, fs_key))
@@ -742,40 +719,36 @@ class EçaHoekstra2014Model(DiscretizationModel):
                 result_2 = least_squares(self.residual_2, (f_est_0, alpha_0), args=(hs, fs_key))
                 result_2w = least_squares(self.residual_2_weighted, (f_est_0, alpha_0), args=(hs, fs_key, weights))
                 # 2b. Take result with smallest standard deviation
-                std_1 = np.sqrt(result_1.fun @ np.identity(n) @ result_1.fun / (n - 2))
-                std_1w = np.sqrt(result_1w.fun @ np.diag(n*weights) @ result_1w.fun / (n - 2))
-                std_2 = np.sqrt(result_2.fun @ np.identity(n) @ result_2.fun / (n - 2))
-                std_2w = np.sqrt(result_2w.fun @ np.diag(n*weights) @ result_2w.fun / (n - 2))
+                std_1 = self.fit_std_dev(result_1.fun, np.identity(n), n, 2)
+                std_1w = self.fit_std_dev(result_1w.fun, np.diag(n*weights), n, 2)
+                std_2 = self.fit_std_dev(result_2.fun, np.identity(n), n, 2)
+                std_2w = self.fit_std_dev(result_2w.fun, np.diag(n*weights), n, 2)
                 sigmas = [std_1, std_1w, std_2, std_2w]
                 index = sigmas.index(np.min(sigmas))
                 if index == 0:
-                    result = result_1.x
                     model_representation = "model_1"
+                    f_est = result_1.x[0]
+                    alphas = [result_1.x[1], np.nan]
+                    orders = [1, np.nan]
                     self.std = std_1
                 elif index == 1:
-                    result = result_1w.x
                     model_representation = "model_1"
+                    f_est = result_1w.x[0]
+                    alphas = [result_1w.x[1], np.nan]
+                    orders = [1, np.nan]
                     self.std = std_1w
                 elif index == 2:
-                    result = result_2.x
                     model_representation = "model_2"
+                    f_est = result_2.x[0]
+                    alphas = [result_2.x[1], np.nan]
+                    orders = [2, np.nan]
                     self.std = std_2
                 else:
-                    result = result_2w.x
                     model_representation = "model_2"
+                    f_est = result_2w.x[0]
+                    alphas = [result_2w.x[1], np.nan]
+                    orders = [2, np.nan]
                     self.std = std_2w
-                # 2c. Compute parameters from model
-                if model_representation == "model_1":
-                    self.parameters.loc[self.parameter_keys[0], key] = "model_1"
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**1
-                    self.parameters.loc[self.parameter_keys[3], key] = 1
-                else:
-                    self.parameters.loc[self.parameter_keys[0], key] = "model_2"
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**2
-                    self.parameters.loc[self.parameter_keys[3], key] = 2
-                self.parameters.loc[self.parameter_keys[1], key] = result[0] #* self.parent.data[key][0]
-                self.parameters.loc[self.parameter_keys[4], key] = np.nan
-                self.parameters.loc[self.parameter_keys[5], key] = np.nan
 
             else:
                 # 3. Solve for 1st, 2nd, and mixed order if order is less than 0.5
@@ -787,59 +760,58 @@ class EçaHoekstra2014Model(DiscretizationModel):
                 result_1and2 = least_squares(self.residual_1and2, (f_est_0, alpha_0, alpha_0), args=(hs, fs_key))
                 result_1and2w = least_squares(self.residual_1and2_weighted, (f_est_0, alpha_0, alpha_0), args=(hs, fs_key, weights))
                 # 3b. Take result with smallest standard deviation
-                std_1 = np.sqrt(result_1.fun @ np.identity(n) @ result_1.fun / (n - 2))
-                std_1w = np.sqrt(result_1w.fun @ np.diag(n*weights) @ result_1w.fun / (n - 2))
-                std_2 = np.sqrt(result_2.fun @ np.identity(n) @ result_2.fun / (n - 2))
-                std_2w = np.sqrt(result_2w.fun @ np.diag(n*weights) @ result_2w.fun / (n - 2))
-                std_1and2 = np.sqrt(result_1and2.fun @ np.identity(n) @ result_1and2.fun / (n - 3))
-                std_1and2w = np.sqrt(result_1and2w.fun @ np.diag(n*weights) @ result_1and2w.fun / (n - 3))
+                std_1 = self.fit_std_dev(result_1.fun, np.identity(n), n, 2)
+                std_1w = self.fit_std_dev(result_1w.fun, np.diag(n*weights), n, 2)
+                std_2 = self.fit_std_dev(result_2.fun, np.identity(n), n, 2)
+                std_2w = self.fit_std_dev(result_2w.fun, np.diag(n*weights), n, 2)
+                std_1and2 = self.fit_std_dev(result_1and2.fun, np.identity(n), n, 3)
+                std_1and2w = self.fit_std_dev(result_1and2w.fun, np.diag(n*weights), n, 3)
                 sigmas = [std_1, std_1w, std_2, std_2w, std_1and2, std_1and2w]
                 index = sigmas.index(np.min(sigmas))
                 if index == 0:
-                    result = result_1.x
                     model_representation = "model_1"
+                    f_est = result_1.x[0]
+                    alphas = [result_1.x[1], np.nan]
+                    orders = [1, np.nan]
                     self.std = std_1
                 elif index == 1:
-                    result = result_1w.x
                     model_representation = "model_1"
+                    f_est = result_1w.x[0]
+                    alphas = [result_1w.x[1], np.nan]
+                    orders = [1, np.nan]
                     self.std = std_1w
                 elif index == 2:
-                    result = result_2.x
                     model_representation = "model_2"
+                    f_est = result_2.x[0]
+                    alphas = [result_2.x[1], np.nan]
+                    orders = [2, np.nan]
                     self.std = std_2
                 elif index == 3:
-                    result = result_2w.x
                     model_representation = "model_2"
+                    f_est = result_2w.x[0]
+                    alphas = [result_2w.x[1], np.nan]
+                    orders = [2, np.nan]
                     self.std = std_2w
                 elif index == 4:
-                    result = result_1and2.x
                     model_representation = "model_1and2"
+                    f_est = result_1and2.x[0]
+                    alphas = [result_1and2.x[1], result_1and2.x[2]]
+                    orders = [1, 2]
                     self.std = std_1and2
                 else:
-                    result = result_1and2w.x
                     model_representation = "model_1and2"
+                    f_est = result_1and2w.x[0]
+                    alphas = [result_1and2w.x[1], result_1and2w.x[2]]
+                    orders = [1, 2]
                     self.std = std_1and2w
 
-                # 3c. Compute parameters from model
-                if model_representation == "model_1":
-                    self.parameters.loc[self.parameter_keys[0], key] = "model_1"
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**1
-                    self.parameters.loc[self.parameter_keys[3], key] = 1
-                    self.parameters.loc[self.parameter_keys[4], key] = np.nan
-                    self.parameters.loc[self.parameter_keys[5], key] = np.nan
-                elif model_representation == "model_2":
-                    self.parameters.loc[self.parameter_keys[0], key] = "model_2"
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1] #* self.parent.data[key][0] / self.parent.hs[0]**2
-                    self.parameters.loc[self.parameter_keys[3], key] = 2
-                    self.parameters.loc[self.parameter_keys[4], key] = np.nan
-                    self.parameters.loc[self.parameter_keys[5], key] = np.nan
-                else:
-                    self.parameters.loc[self.parameter_keys[0], key] = "model_1and2"
-                    self.parameters.loc[self.parameter_keys[2], key] = result[1]  
-                    self.parameters.loc[self.parameter_keys[3], key] = 1
-                    self.parameters.loc[self.parameter_keys[4], key] = result[2] 
-                    self.parameters.loc[self.parameter_keys[5], key] = 2
-                self.parameters.loc[self.parameter_keys[1], key] = result[0] #* self.parent.data[key][0]
+            # 4. Compute parameters from model
+            self.parameters.loc[self.parameter_keys[0], key] = model_representation
+            self.parameters.loc[self.parameter_keys[1], key] = f_est #* self.parent.data[key][0]
+            self.parameters.loc[self.parameter_keys[2], key] = alphas[0] #* self.parent.data[key][0] / self.parent.hs[0]**2
+            self.parameters.loc[self.parameter_keys[3], key] = orders[0]
+            self.parameters.loc[self.parameter_keys[4], key] = alphas[1]
+            self.parameters.loc[self.parameter_keys[5], key] = orders[1]
 
 
     def f_est(self) -> pd.Series:

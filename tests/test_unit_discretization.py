@@ -293,7 +293,7 @@ def test_minimumvalue(dataframe):
 def test_eçahoekstra2014model(dataframe4):
     """Test Eca2014Model class"""
     model = dis.CustomDiscretizationError(dataframe4, model=dis.EçaHoekstra2014Model)
-    test_data = pd.DataFrame({"fs": ["model_2", 10.0, -3.0, 2, np.nan, np.nan],
+    test_data = pd.DataFrame({"fs": ["model_p", 10.0, -3.0, 2, np.nan, np.nan],
                               "gs": ["model_p", 10.0, 3.0, 1.0, np.nan, np.nan]},
                              index=["model", "f_est", "alpha_1", "p_1", "alpha_2", "p_2"])
     assert model.model.parameter_keys == list(test_data.index)
