@@ -1,6 +1,14 @@
 """
-This script reads pressure coefficient (Cp) probe data from OpenFOAM
-backward-facing step simulations at three mesh refinements.
+This script can be used with the OpenFOAM discretization error tutorial. When
+properly modified for your system, it will extract the relevant files from the
+completed cases, load them into a Pandas DataFrame, and then estimate the 
+discretization error using CFDverify.
+
+Lines that should be modified are commented with `# MODIFY`, which you can 
+search in a text editor for easy modification.
+
+Sections are commented with `# %%`, so this script can be run interactively as
+Jupyter code blocks if using VS Code.
 """
 # %% Import modules
 from pathlib import Path
@@ -10,8 +18,9 @@ import pandas as pd
 import cfdverify.utils as utils
 from cfdverify.discretization import Classic
 
-# %% Read Cp data from each mesh case
-base_dir = Path("/home/justin/cfd/bfs")
+
+# %% Read data from each mesh case
+base_dir = Path("/home/justin/cfd/bfs") # MODIFY
 cases = ["bfs1", "bfs2", "bfs4"]
 
 cp_data = {}
@@ -22,6 +31,7 @@ for case in cases:
 
 cp = pd.DataFrame(cp_data)
 print(cp)
+
 
 # %% Estimate discretization error at the last time step
 # Cell counts taken from each case's log.blockMesh, ordered finest to coarsest

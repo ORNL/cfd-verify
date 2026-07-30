@@ -1,10 +1,24 @@
 OpenFOAM
 ========
 
-OpenFOAM is an open-source finite-volume solver which is a popular choice for CFD solvers.
+OpenFOAM is an open-source finite-volume solver that is widely used for CFD.
 This tutorial will walk you through conducting a discretization error evaluation using OpenFOAM.
-For this case, we will use the 2D incompressible backwards-facing step case in the OpenFOAM tutorials.
-You will need OpenFOAM installed to run the cases for this tutorial.
+For this case, we will recreate the backwards-facing step (BFS) case published by Celik and Karatekin in 1997 [Celik1997]_.
+*Note*, you will access to an OpenFOAM installation for this tutorial. 
+If you do not have access and are not familiar with installing research software, it is recommended you start with the mfoil tutorial instead.
+
+The BFS is a canonical case in CFD that has been extensively used for turbulence modeling development.
+The step simulates a 2D channel flow (i.e., infinite in the spanwise direction) where the channel suddenly expands.
+This expansion causes flow separation at the step, and with sufficient velocity, extensive turbulent mixing behind it.
+The flow separation forms a clockwise vortex behind the step where the velocity near the wall is opposite of the primary streamwise flow.
+The chief quantity of interest in this flow is the reattachment length (i.e., the distance behind the step where the average velocity just off the wall returns to streamwise).
+The reattachment length can be measured by identify the location on the wall where the static pressure reaches a local maximum.
+
+Celik and Karatekin showed...
+
+In this tutorial, we will investigate the discretization error of the reattachment length, the mean post-step wall pressure, and local velocity components in the free shear layer.
+Stuff on why ...
+
 
 Steps
 ^^^^^
@@ -20,3 +34,8 @@ Next Steps
 ^^^^^^^^^^
 
 The above tutorial explains the basic process of evaluating discretization error using Richardson extrapolation
+
+References
+==========
+
+.. [Celik1997] I. Ceilk and O. Karatekin, *Grid Convergence Studies on Nonuniform Grids*, 1997.
