@@ -43,6 +43,16 @@ a,
     border-color: #4D9E6E;
 }
 
+/* Trim the search box's horizontal padding so the logo is larger */
+.wy-side-nav-search {
+    padding-left: 0.3em;
+    padding-right: 0.0em;
+}
+.wy-side-nav-search > a {
+    padding-left: 2px;
+    padding-right: 0px;
+}
+
 .btn-neutral {
     background-color: #EAF3DE !important;
     color: #1A3D2B !important;
