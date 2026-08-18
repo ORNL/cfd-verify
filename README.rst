@@ -1,6 +1,6 @@
 .. image:: branding/cfdverify_wordmark.svg
    :align: center
-   :width: 340px
+   :width: 500px
    :alt: CFDverify logo
 
 CFDverify
