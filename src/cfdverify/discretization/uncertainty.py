@@ -196,3 +196,70 @@ class FactorOfSafety(UncertaintyModel):
             error = self.parent.error(key, index)
 
         return factor * abs(error)
+
+
+class EçaHoekstra2014Uncertainty(UncertaintyModel):
+    """Computes uncertainty for Eça and Hoekstra 2014 Procedure
+    
+    This method is only compatible with the EçaHoekstra2014Model class.
+    """
+
+    def uncertainty(self,
+                    key: str,
+                    index: Union[int, None] = None,
+    ) -> Union[np.floating, pd.Series]:
+        """Compute uncertainty as a constant factor of the error estimate
+
+        Parameters
+        ----------
+        key : str
+            Key of system response quantity of interest
+        index : int | None
+            Index of discretization level of interest or None for all levels
+
+        Returns
+        -------
+        : np.floating | pd.Series
+            Uncertainty of requested values using supplied factor of safety
+        """
+        # Compute fitting error
+        if index is None:
+            fs = self.parent.data[key]
+            hs = self.parent.hs
+        else:
+            fs = self.parent.data[key].iloc[index]
+            hs = self.parent.hs.iloc[index]
+        error_fit = np.abs(fs - self.parent.model.model(key, hs))
+        # Standard deviation of fit
+        sigma = self.parent.model.std
+        # Discretization error estimate
+        error = np.abs(self.parent.error(key, index))
+
+        # Appendix A: Step 2
+        # Compute data range parameter, Eq. 19.
+        all_fs = self.parent.data[key]
+        data_range = (max(all_fs) - min(all_fs)) / (len(self.parent) - 1)
+        
+        # Appendix A: Step 3
+        # Set factor of safety
+        p = self.parent.model.p_fit
+        p_formal = self.parent.model.p_formal
+        if p >= 0.5 and p < p_formal*1.05 and sigma < data_range:
+            Fs = 1.25
+        else:
+            Fs = 3
+        
+        # Appendix A: Step 4
+        # Compute uncertainty
+        if sigma < data_range:
+            # Eq. 20
+            u = Fs*error + sigma + error_fit 
+        else:
+            # Eq. 21, note difference in parenthesis
+            u = Fs * (sigma / data_range) * (error + sigma + error_fit)
+
+        if index is None:
+            return pd.Series(u, name=key)
+        else:
+            return u
+    
