@@ -1,6 +1,4 @@
-/* CFDverify brand palette overrides for sphinx_rtd_theme.
-   Sidebar header background is set via the style_nav_header_background
-   theme option in conf.py, not here. */
+/* CFDverify brand palette overrides for sphinx_rtd_theme. */
 
 a,
 .rst-content a {
