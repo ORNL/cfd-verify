@@ -1,4 +1,4 @@
-.. image:: https://raw.githubusercontent.com/ORNL/cfd-verify/main/branding/cfdverify_wordmark.svg
+.. image:: branding/cfdverify_wordmark.svg
    :align: center
    :width: 340px
    :alt: CFDverify logo
