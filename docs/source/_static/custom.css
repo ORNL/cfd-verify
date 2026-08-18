@@ -1,0 +1,62 @@
+/* CFDverify brand palette overrides for sphinx_rtd_theme. */
+
+a,
+.rst-content a {
+    color: #2E6B4A;
+}
+
+.wy-nav-side {
+    background: #1A3D2B;
+}
+
+.wy-menu-vertical p.caption {
+    color: #4D9E6E;
+}
+
+.wy-menu-vertical a {
+    color: #EAF3DE;
+}
+
+.wy-menu-vertical a:hover {
+    background-color: #4D9E6E;
+    color: #fff;
+}
+
+.wy-menu-vertical li.current > a,
+.wy-menu-vertical li.on a {
+    color: #1A3D2B;
+    background: #C9980A;
+}
+
+.wy-menu-vertical li.current > a:hover,
+.wy-menu-vertical li.on a:hover {
+    background: #C9980A;
+}
+
+.wy-menu-vertical li.toctree-l1.current > a {
+    border-color: #4D9E6E;
+}
+
+.wy-side-nav-search input[type=text] {
+    border-color: #4D9E6E;
+}
+
+/* Trim the search box's horizontal padding so the logo is larger */
+.wy-side-nav-search {
+    padding-left: 0.3em;
+    padding-right: 0.0em;
+}
+.wy-side-nav-search > a {
+    padding-left: 2px;
+    padding-right: 0px;
+}
+
+.btn-neutral {
+    background-color: #EAF3DE !important;
+    color: #1A3D2B !important;
+}
+
+h1, h2, h3,
+.rst-content h1, .rst-content h2, .rst-content h3 {
+    color: #1A3D2B;
+}

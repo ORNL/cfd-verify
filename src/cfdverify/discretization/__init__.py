@@ -4,7 +4,7 @@ from .discretization_error import (
     CustomDiscretizationError,
 )
 from .error import (
-    EstimatedError, 
+    EstimatedError,
     RelativeError,
 )
 from .model import (

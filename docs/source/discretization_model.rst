@@ -3,7 +3,7 @@ DiscretizationModel
 
 DiscretizationModel is the abstract base class for discretization error models. Below is the description of the abstract base class followed by the concrete classes.
 
-.. autoclass:: cfdverify.discretization.DiscretizationModel
+.. autoclass:: cfdverify.discretization.model.DiscretizationModel
     :members:
 
 .. autoclass:: cfdverify.discretization.SinglePower

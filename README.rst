@@ -1,5 +1,12 @@
+.. image:: branding/cfdverify_wordmark.svg
+   :align: center
+   :width: 500px
+   :alt: CFDverify logo
+
 CFDverify
 =========
+
+|pypi| |pyversions| |license| |docs|
 
 Efficient solution verification tools for computational fluid dynamics (CFD).
 
@@ -69,3 +76,19 @@ Author
 ------
 
 Justin Weinmeister: <weinmeistejr@ornl.gov>
+
+.. |pypi| image:: https://img.shields.io/pypi/v/cfdverify.svg
+   :target: https://pypi.org/project/cfdverify/
+   :alt: PyPI version
+
+.. |pyversions| image:: https://img.shields.io/pypi/pyversions/cfdverify.svg
+   :target: https://pypi.org/project/cfdverify/
+   :alt: Supported Python versions
+
+.. |license| image:: https://img.shields.io/pypi/l/cfdverify.svg
+   :target: https://github.com/ORNL/cfd-verify/blob/main/LICENSE
+   :alt: MIT License
+
+.. |docs| image:: https://img.shields.io/readthedocs/cfd-verify
+   :target: https://cfd-verify.readthedocs.io
+   :alt: Documentation status
