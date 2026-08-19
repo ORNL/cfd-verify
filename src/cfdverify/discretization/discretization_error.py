@@ -627,7 +627,17 @@ class Average(DiscretizationError):
         return StudentsTDistribution(self)
 
 class EçaHoekstra2014(DiscretizationError):
-    """Follows the procedure from Eça and Hoekstra 2014"""
+    """Follows the procedure from Eça and Hoekstra 2014
+    
+    Note this model has not been fully verified against the original work.
+
+    References
+    ----------
+    L. Eça and M. Hoekstra, 2014, A Procedure for the Estimation of the 
+    Numerical Uncertainty of CFD Calculations Based on Grid Refinement Studies,
+    Journal of Computational Physics, 262: 104-130. 
+    https://doi.org/10.1016/j.jcp.2014.01.006
+    """
 
     def create_model(self) -> DiscretizationModel:
         """Create EçaHoekstra2014 discretization model for analysis
