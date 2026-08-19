@@ -69,6 +69,7 @@ def test_first_and_second_order_literature(roy_2003):
 
     assert model.f_est.values == approx(roy_exact, rel=0.05)
 
+
 @pytest.mark.xfail
 def test_eçahoekstra2014_fig9(eçahoekstra2014_fig9):
     """Test against data from Eça and Hoekstra 2014 paper
