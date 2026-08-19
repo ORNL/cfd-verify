@@ -9,6 +9,7 @@ CFDverify is a python package designed to make verifying for computational fluid
 
    Readme <readme>
    tutorials
+   theory
    modules
    development
    

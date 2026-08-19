@@ -10,7 +10,7 @@ The discretization module is designed to help you conduct solution verification 
     discretization_error
     discretization_uncertainty
 
-.. autoclass:: cfdverify.discretization.DiscretizationError
+.. autoclass:: cfdverify.discretization.discretization_error.DiscretizationError
     :members:
 
 .. autoclass:: cfdverify.discretization.Classic
@@ -22,5 +22,9 @@ The discretization module is designed to help you conduct solution verification 
     :show-inheritance:
 
 .. autoclass:: cfdverify.discretization.CustomDiscretizationError
+    :members:
+    :show-inheritance:
+
+.. autoclass:: cfdverify.discretization.EçaHoekstra2014
     :members:
     :show-inheritance:

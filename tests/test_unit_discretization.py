@@ -1,8 +1,11 @@
 import os
-from pytest import approx, raises
+
 import numpy as np
 import pandas as pd
+from pytest import approx, raises
+
 import cfdverify.discretization as dis
+
 
 ## Test DiscretizationError class
 # Test constructor options
@@ -287,6 +290,24 @@ def test_minimumvalue(dataframe):
     assert model.model("fs", 0) == approx(9.25)
     assert model.model("fs", np.array([0, 0.5])) == approx([9.25, 9.25])
 
+def test_eçahoekstra2014model(dataframe4):
+    """Test Eca2014Model class"""
+    model = dis.CustomDiscretizationError(dataframe4, model=dis.EçaHoekstra2014Model)
+    test_data = pd.DataFrame({"fs": ["model_p", 10.0, -3.0, 2, np.nan, np.nan],
+                              "gs": ["model_p", 10.0, 3.0, 1.0, np.nan, np.nan]},
+                             index=["model", "f_est", "alpha_1", "p_1", "alpha_2", "p_2"])
+    assert model.model.parameter_keys == list(test_data.index)
+    pd.testing.assert_frame_equal(model.model.parameters, test_data,
+                                  check_dtype=False)
+    pd.testing.assert_series_equal(model.f_est, test_data.loc["f_est"],
+                                   check_dtype=False,
+                                   check_index=False)
+    pd.testing.assert_frame_equal(model.order, test_data.loc[["p_1", "p_2"]],
+                                  check_dtype=False)
+    assert model.model("fs", 0) == approx(10)
+    assert model.model("fs", np.array([0, 0.5])) == approx([10, 9.25])
+
+
 # Test error models
 def test_estimatederror(dataframe):
     """Test EstimatedError class"""
@@ -362,3 +383,11 @@ def test_factorofsafety(dataframe):
     pd.testing.assert_series_equal(model.uncertainty("gs"), test_data["gs"])
     assert model.uncertainty("fs", 2) == approx(test_data["fs"][2])
     assert model.uncertainty("fs", 2, 2) == approx(test_data["fs"][2] * 2/3)
+
+def test_eçahoekstra2014uncertainty(dataframe4):
+    model = dis.EçaHoekstra2014(dataframe4)
+    test_data = 1.25 * pd.DataFrame({"fs": [0.03, 0.12, 0.3675, 0.75],
+                                     "gs": [0.3, 0.6, 1.05, 1.5]})
+    pd.testing.assert_series_equal(model.uncertainty("fs"), test_data["fs"])
+    pd.testing.assert_series_equal(model.uncertainty("gs"), test_data["gs"])
+    assert model.uncertainty("fs", 2) == approx(test_data["fs"][2])
