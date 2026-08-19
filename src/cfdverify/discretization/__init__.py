@@ -2,6 +2,7 @@ from .discretization_error import (
     Average,
     Classic,
     CustomDiscretizationError,
+    EçaHoekstra2014
 )
 from .error import (
     EstimatedError,
@@ -9,6 +10,7 @@ from .error import (
 )
 from .model import (
     AverageValue,
+    EçaHoekstra2014Model,
     FinestValue,
     FirstAndSecondOrder,
     MaximumValue,
@@ -16,6 +18,7 @@ from .model import (
     SinglePower,
 )
 from .uncertainty import (
+    EçaHoekstra2014Uncertainty,
     FactorOfSafety,
     GCI,
     StudentsTDistribution,

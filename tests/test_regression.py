@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+import pytest
 from pytest import approx
 
 import cfdverify.discretization as dis
@@ -65,3 +68,36 @@ def test_first_and_second_order_literature(roy_2003):
     model = dis.CustomDiscretizationError(roy_data, model=dis.FirstAndSecondOrder)
 
     assert model.f_est.values == approx(roy_exact, rel=0.05)
+
+@pytest.mark.xfail
+def test_eçahoekstra2014_fig9(eçahoekstra2014_fig9):
+    """Test against data from Eça and Hoekstra 2014 paper
+
+    This data was extracted digitally from the paper where Eça and Hoekstra 
+    present their complete procedure. Specifically, it comes from Figure 9 and
+    includes both the Spalart-Allmaras and k-omega Shear Stress Transport (SST)
+    data at a Reynolds number of 10^7.
+
+    .. note::
+
+        The results from this implementation do not currently match the results
+        from the original work in full. In particular, the data does not match
+        for the coarse mesh results. It is currently believed that this may be 
+        due to a difference in solver; however, an exact comparison can not be 
+        made until the original data is obtained. As such, this test is 
+        expected to fail.
+
+
+    References
+    ----------
+    L. Eça and M. Hoekstra, 2014, A Procedure for the Estimation of the 
+    Numerical Uncertainty of CFD Calculations Based on Grid Refinement Studies,
+    Journal of Computational Physics, 262: 104-130. 
+    https://doi.org/10.1016/j.jcp.2014.01.006
+    """
+    model = dis.EçaHoekstra2014(eçahoekstra2014_fig9)
+    order1 = pd.Series([1.37, 0.98, 1, 2, 1.65, 1.04], dtype=object, name="p_1")
+    order2 = pd.Series([np.nan, np.nan, 2, np.nan, np.nan, np.nan], dtype=object, name="p_2")
+
+    pd.testing.assert_series_equal(model.parameters.loc["p_1"], order1, check_index=False)
+    pd.testing.assert_series_equal(model.parameters.loc["p_2"], order2, check_index=False)

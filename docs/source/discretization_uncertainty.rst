@@ -17,3 +17,7 @@ UncertaintyModel is the abstract base class for computing the uncertainty estima
 .. autoclass:: cfdverify.discretization.FactorOfSafety
     :members:
     :show-inheritance:
+
+.. autoclass:: cfdverify.discretization.EçaHoekstra2014Uncertainty
+    :members:
+    :show-inheritance:
